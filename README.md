@@ -17,6 +17,13 @@ or
 `docker compose -f docker-compose.dev.yaml exec nginx sh`
 `nginx -s reload`
 
+### Prisma
+`yarn prisma migrate dev --name init`
+`yarn prisma:seed`
+`yarn prisma:seed-undo`
+`yarn prisma db push`
+`yarn prisma generate`
+
 
 ## Redis:
 

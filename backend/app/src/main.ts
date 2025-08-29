@@ -1,22 +1,29 @@
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { AppModule } from './app/app.module';
+import { initSwagger } from './utils/initSwager';
+import { initHelmet } from './utils/initHelmet';
+import cookieParser from 'cookie-parser';
+
+import { getHost, getPort } from './config';
+import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  initHelmet(app);
+  initSwagger(app);
+  app.use(cookieParser());
 
-  const config = new DocumentBuilder()
-    .setTitle('Документация API')
-    .setDescription('Описание API проекта')
-    .setVersion('1.0')
-    // по желанию можно добавить ключ API и другие настройки:
-    //.addApiKey({ type: 'apiKey', name: 'X-API-KEY', in: 'header' }, 'X-API-KEY')
-    .build();
+  app.useGlobalPipes(
+    new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }),
+  );
 
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('docs', app, document);
+  // app.enableCors({
+  //   origin: [getHost()],
+  //   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+  //   credentials: true,
+  // });
 
-  await app.listen(process.env.PORT ?? 3000);
+  await app.listen(getPort() ?? 3000);
 }
 
 bootstrap();

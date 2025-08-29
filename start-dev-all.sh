@@ -17,6 +17,7 @@ docker compose -f ./docker-compose.dev.yaml up -d
 cd ../backend
 docker compose -f ./docker-compose.dev.yaml build
 docker compose -f ./docker-compose.dev.yaml up -d
+docker compose -f docker-compose.dev.yaml exec backend-dev-instance-1 yarn prisma:seed
 
 cd ../website
 docker compose -f ./docker-compose.dev.yaml build
