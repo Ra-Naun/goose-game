@@ -1,4 +1,4 @@
-import { EnumAppMode } from './types';
+import { EnumAppMode } from '../types';
 
 const getAppMode = () => (process.env.NODE_ENV as EnumAppMode) || 'development';
 export const isProduction = () => getAppMode() === EnumAppMode.PROD;

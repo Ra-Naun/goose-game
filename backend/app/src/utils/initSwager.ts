@@ -1,7 +1,7 @@
 import { INestApplication } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { TOKEN_KEY } from 'src/auth/config';
-import { isProduction } from 'src/config';
+import { isProduction } from 'src/config/env.config';
 
 export const initSwagger = (app: INestApplication<any>) => {
   if (!isProduction()) {
@@ -18,7 +18,6 @@ export const initSwagger = (app: INestApplication<any>) => {
       )
       .build();
 
-    // app.setGlobalPrefix('api');
     const document = SwaggerModule.createDocument(app, config, {
       ignoreGlobalPrefix: false,
     });
@@ -30,6 +29,6 @@ export const initSwagger = (app: INestApplication<any>) => {
       ]),
     );
 
-    SwaggerModule.setup('docs', app, document);
+    SwaggerModule.setup('docs/api', app, document);
   }
 };

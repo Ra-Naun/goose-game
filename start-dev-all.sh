@@ -2,11 +2,11 @@
 
 docker network create backend-network
 
-# cd ./redis
-# docker compose -f ./docker-compose.dev.yaml build
-# docker compose -f ./docker-compose.dev.yaml up -d
+cd ./redis
+docker compose -f ./docker-compose.dev.yaml build
+docker compose -f ./docker-compose.dev.yaml up -d
 
-cd ./postgresql
+cd ../postgresql
 docker compose -f ./docker-compose.dev.yaml build
 docker compose -f ./docker-compose.dev.yaml up -d
 

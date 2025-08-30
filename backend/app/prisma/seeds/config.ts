@@ -4,7 +4,7 @@ import {
   getInitAdminEmail,
   getInitAdminPassword,
   getInitAdminUsername,
-} from '../../src/config';
+} from '../../src/config/env.config';
 import { UserRole } from '../../src/user/dto/types';
 
 dotenv.config();

@@ -3,13 +3,15 @@ import { IsString } from 'class-validator';
 
 export class LoginUserDto {
   @ApiProperty({
-    default: 'ra@naun.com',
+    type: 'string',
+    enum: ['ivan@email.com', 'petr@email.com'],
   })
   @IsString()
   email: string;
 
   @ApiProperty({
-    default: 'qwerty1234',
+    type: 'string',
+    enum: ['ivan123', 'petr123'],
   })
   @IsString()
   password: string;

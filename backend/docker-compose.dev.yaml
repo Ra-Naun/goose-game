@@ -8,6 +8,8 @@ services:
       dockerfile: ./docker/dev/Dockerfile
     env_file:
       - ./docker/dev/.env
+    ports:
+      - '7777:3000'
     volumes:
       - ./app:/usr/src/app
     restart: always

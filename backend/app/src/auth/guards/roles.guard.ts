@@ -3,7 +3,14 @@ import { Reflector } from '@nestjs/core';
 import { UserRole } from 'src/user/dto/types';
 import { ROLES_KEY } from '../decorators/roles.decorator';
 import { UserDto } from 'src/user/dto/user.dto';
+import type { JwtRequest } from 'src/types/request-user';
 
+export const checkIsUserHasRequiredRole = (
+  user: UserDto,
+  roles: UserRole[],
+): boolean => {
+  return roles.some((role) => user.roles.includes(role));
+};
 @Injectable()
 export class RolesGuard implements CanActivate {
   constructor(private reflector: Reflector) { }
@@ -13,21 +20,17 @@ export class RolesGuard implements CanActivate {
       ROLES_KEY,
       [context.getHandler(), context.getClass()],
     );
-    console.log('~| requiredRoles', requiredRoles);
 
     if (!requiredRoles) {
       return true;
     }
-    const req = context.switchToHttp().getRequest();
+    const req: JwtRequest = context.switchToHttp().getRequest();
 
     const user: UserDto | undefined = req.user;
-    console.log('~| user', user);
     if (!user) {
       return false;
     }
 
-    console.log('~| user.roles', user.roles);
-
-    return requiredRoles.some((role) => user.roles.includes(role));
+    return checkIsUserHasRequiredRole(user, requiredRoles);
   }
 }

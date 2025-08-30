@@ -17,7 +17,7 @@ model User {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  games     UserGameScore[]    @relation("user_score")
+  matchs     UserMatchScore[]    @relation("user_score")
 
   @@map("user")
 }
@@ -29,31 +29,43 @@ enum UserRole {
   @@map("user_role")
 }
 
-model Game {
+
+enum MatchStatus {
+  WAITING
+  ONGOING
+  FINISHED
+  @@map("match_status")
+}
+model Match {
   id        String   @id @default(uuid())
+  startTime DateTime @map("start_time")
+  endTime   DateTime? @map("end_time")
+  cooldownEndTime DateTime @map("cooldown_end_time")
+  maxPlayers Int     @map("max_players") @default(10)
+  status    MatchStatus   @default(WAITING)
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  scores    UserGameScore[]    @relation("game_scores")
+  scores    UserMatchScore[]    @relation("match_scores")
 
-  @@map("game")
+  @@map("match")
 }
 
-model UserGameScore {
+model UserMatchScore {
   id        String   @id @default(uuid())
   score     Int      @default(0)
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  game      Game     @relation("game_scores", fields: [gameId], references: [id], onDelete: Cascade)
-  gameId    String   @map("game_id")
+  match      Match     @relation("match_scores", fields: [matchId], references: [id], onDelete: Cascade)
+  matchId    String   @map("match_id")
 
   user      User     @relation("user_score", fields: [userId], references: [id], onDelete: Cascade)
   userId    String   @map("user_id")
 
   @@index([userId], name: "idx_user_id")
-  @@index([gameId], name: "idx_game_id")
-  @@index([userId, gameId], name: "idx_user_game_id")
+  @@index([matchId], name: "idx_match_id")
+  @@index([userId, matchId], name: "idx_user_match_id")
 
-  @@map("game_score")
+  @@map("match_score")
 }

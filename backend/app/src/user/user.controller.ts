@@ -21,6 +21,7 @@ import { UserRole } from './dto/types';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { TOKEN_KEY } from 'src/auth/config';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
+import type { JwtRequest } from 'src/types/request-user';
 
 @ApiTags('User')
 @Controller('user')
@@ -30,12 +31,14 @@ export class UserController {
   @ApiBearerAuth(TOKEN_KEY)
   @UseGuards(JwtAuthGuard)
   @Get('me')
-  getCurrentUser(@Request() req): Omit<UserDto, 'hashedPassword'> | null {
+  getCurrentUser(
+    @Request() req: JwtRequest,
+  ): Omit<UserDto, 'hashedPassword'> | null {
     if (!req.user) {
       return null;
     }
 
-    const { hashedPassword: _, ...otherData } = req.user as UserDto;
+    const { hashedPassword: _, ...otherData } = req.user;
     return otherData;
   }
 
@@ -43,13 +46,11 @@ export class UserController {
   @UseGuards(JwtAuthGuard)
   @Patch('me')
   async updateCurrentUser(
-    @Request() req,
+    @Request() req: JwtRequest,
     @Body() dto: UpdateUserDto,
   ): Promise<UserDto | null> {
-    console.log('~| req.user', req.user);
-
-    await this.userService.update(req.user.id as UserDto['id'], dto);
-    return this.userService.findById(req.user.id as UserDto['id']);
+    await this.userService.update(req.user.id, dto);
+    return this.userService.findById(req.user.id);
   }
 
   @ApiBearerAuth(TOKEN_KEY)
