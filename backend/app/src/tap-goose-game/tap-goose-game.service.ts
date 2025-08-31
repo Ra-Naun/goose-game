@@ -12,6 +12,7 @@ import {
   UserGooseTapPubSubEventDto,
   UserJoinedOrLeftMatchPubSubEventDto,
 } from './dto';
+import { PrismaService } from 'src/prisma/prisma.service';
 
 const ROUND_DURATION = 60 * 1000; // 60 секунд
 const COOLDOWN_DURATION = 30 * 1000; // 30 секунд
@@ -38,6 +39,7 @@ export class TapGooseGameService {
   constructor(
     private readonly cacheService: ExternalCacheService,
     private readonly pubSubService: TapGooseGamePubSubService,
+    private readonly prisma: PrismaService,
   ) { }
 
   private readonly throttleLimitMs = 10; //in ms
@@ -182,7 +184,34 @@ export class TapGooseGameService {
       );
     }
     await this.cacheService.del(REDIS_KEYS.getMatchKey(match.id));
-    // TODO сохранение результатов в БД
+    await this.saveMatchResultsToDatabase(match);
+  }
+
+  private saveMatchResultsToDatabase(match: GameMatch) {
+    // Пример сохранения результатов матча в БД
+    const matchRecord = this.prisma.match.create({
+      data: {
+        id: match.id,
+        startTime: new Date(match.startTime),
+        endTime: new Date(match.endTime),
+        cooldownEndTime: new Date(match.cooldownEndTime),
+        maxPlayers: match.maxPlayers,
+        status: match.status,
+      },
+    });
+
+    const playerRecords = Object.entries(match.players).map(
+      ([playerId, score]) =>
+        this.prisma.userMatchScore.create({
+          data: {
+            matchId: match.id,
+            playerId,
+            score,
+          },
+        }),
+    );
+
+    return this.prisma.$transaction([matchRecord, ...playerRecords]);
   }
 
   private async validateTapGoose(

@@ -9,15 +9,15 @@ datasource db {
 
 
 model User {
-  id        String      @id @default(uuid())
-  username  String
-  email     String   @unique
+  id              String      @id @default(uuid())
+  username        String
+  email           String   @unique
   hashedPassword  String @map("hashed_password")
-  roles   UserRole[] @default([USER])
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  roles           UserRole[] @default([USER])
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
 
-  matchs     UserMatchScore[]    @relation("user_score")
+  matches         UserMatchScore[]    @relation("user_score")
 
   @@map("user")
 }
@@ -60,12 +60,12 @@ model UserMatchScore {
   match      Match     @relation("match_scores", fields: [matchId], references: [id], onDelete: Cascade)
   matchId    String   @map("match_id")
 
-  user      User     @relation("user_score", fields: [userId], references: [id], onDelete: Cascade)
-  userId    String   @map("user_id")
+  user      User     @relation("user_score", fields: [playerId], references: [id], onDelete: Cascade)
+  playerId    String   @map("user_id")
 
-  @@index([userId], name: "idx_user_id")
+  @@index([playerId], name: "idx_user_id")
   @@index([matchId], name: "idx_match_id")
-  @@index([userId, matchId], name: "idx_user_match_id")
+  @@index([playerId, matchId], name: "idx_user_match_id")
 
   @@map("match_score")
 }

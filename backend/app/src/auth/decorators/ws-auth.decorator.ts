@@ -26,6 +26,7 @@ export function WsAuthDecorator() {
           this.usersService,
         );
       } catch (error) {
+        console.log('WebSocket auth failed:', error.message);
         client.disconnect(true);
         return;
       }
