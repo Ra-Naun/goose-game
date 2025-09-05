@@ -2664,11 +2664,6 @@ picomatch@^4.0.2, picomatch@^4.0.3:
   resolved "https://registry.yarnpkg.com/picomatch/-/picomatch-4.0.3.tgz#796c76136d1eead715db1e7bad785dedd695a042"
   integrity sha512-5gTmgEY/sqK6gFXLIsQNH19lWb4ebPDLA4SdLP7dsWkIXHWlG66oPuVvXSGFPppYZz8ZDZq0dYYrbHfBCVUb1Q==
 
-pixi-viewport@^6.0.3:
-  version "6.0.3"
-  resolved "https://registry.yarnpkg.com/pixi-viewport/-/pixi-viewport-6.0.3.tgz#a35f3abe4d9181d81f325d3223400c6e0bf77f4b"
-  integrity sha512-2+qPJ0/n+8hQYhWvY+795+x9y3MiUrCOWacK0DY53whowWaGdx9iDocy7z1pBwjkZhC52YvrJQuZKK0sdVLtBw==
-
 pixi.js@^8.12.0:
   version "8.12.0"
   resolved "https://registry.yarnpkg.com/pixi.js/-/pixi.js-8.12.0.tgz#6079f953de83491ebc021f8a0ead0d167cf24191"

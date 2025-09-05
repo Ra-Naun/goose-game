@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState, useCallback, useMemo, useLayoutEffect } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { Sprite, Container, Assets } from "pixi.js";
 import { useParams } from "@tanstack/react-router";
 import { Application, useExtend } from "@pixi/react";
@@ -10,6 +10,7 @@ import goosePng from "./images/goose.png";
 import { Loading } from "@/src/components/Goose-UI/Loading";
 import { useTexture } from "@/src/hooks/PIXI/useTexture";
 import { useGoosePosition } from "@/src/hooks/games/tapGoose/useGoosePosition";
+import { useViewerSizes } from "@/src/hooks/games/tapGoose/useViewerSizes";
 
 function Goose({ onTap, width, height }: { onTap: () => void; width: number; height: number }) {
   useExtend({ Sprite });
@@ -32,28 +33,6 @@ function Goose({ onTap, width, height }: { onTap: () => void; width: number; hei
     />
   );
 }
-
-const useViewerSizes = () => {
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  const [width, setWidth] = useState(0);
-  const [height, setHeight] = useState(0);
-
-  // Поддержка адаптивности по размеру контейнера
-  useLayoutEffect(() => {
-    function updateSize() {
-      if (containerRef.current) {
-        setWidth(containerRef.current.clientWidth);
-        setHeight(containerRef.current.clientHeight);
-      }
-    }
-    updateSize();
-
-    window.addEventListener("resize", updateSize);
-    return () => window.removeEventListener("resize", updateSize);
-  }, []);
-  return { width, height, containerRef };
-};
 
 interface MatchParams {
   matchId: string;
@@ -123,7 +102,13 @@ export function Match() {
                 </div>
               ) : (
                 <>
-                  <Application width={width} height={height} className="h-full w-full ">
+                  <Application
+                    width={width}
+                    height={height}
+                    className="h-full w-full"
+                    backgroundColor={"#101828"}
+                    // backgroundAlpha={0}
+                  >
                     <Goose width={width} height={height} onTap={handleGooseTap} />
                   </Application>
                 </>
