@@ -1,7 +1,23 @@
 import { IsDate, IsString } from 'class-validator';
-import { UserRole } from './types';
-import { User } from '@prisma/client';
+import { UserRoleEnum } from './types';
+import { $Enums, User } from '@prisma/client';
+import { UserInfoDto } from 'src/tap-goose-game/dto';
 
+const USER_ROLES_MAP: { [key in $Enums.UserRole]: UserRoleEnum } = {
+  ADMIN: UserRoleEnum.ADMIN,
+  USER: UserRoleEnum.USER,
+  NIKITA: UserRoleEnum.NIKITA,
+};
+
+const parsePrismaUserRoleToEnum = (
+  roles: $Enums.UserRole[],
+): UserRoleEnum[] => {
+  return roles.map((role) => USER_ROLES_MAP[role]);
+};
+
+export type SerializedUserForUI = Omit<UserDto, 'hashedPassword'>;
+
+export type OnlineUsers = UserInfoDto[];
 export class UserDto {
   @IsString()
   id: string;
@@ -22,7 +38,7 @@ export class UserDto {
   updatedAt: Date;
 
   @IsString()
-  roles: UserRole[];
+  roles: UserRoleEnum[];
 
   static fromDatabaseItem(item: User) {
     const userDto = new UserDto();
@@ -32,7 +48,12 @@ export class UserDto {
     userDto.hashedPassword = item.hashedPassword;
     userDto.createdAt = item.createdAt;
     userDto.updatedAt = item.updatedAt;
-    userDto.roles = item.roles as UserRole[];
+    userDto.roles = parsePrismaUserRoleToEnum(item.roles);
     return userDto;
+  }
+
+  static serializeForUI(item: UserDto): SerializedUserForUI {
+    const { hashedPassword: _, ...data } = item;
+    return data;
   }
 }

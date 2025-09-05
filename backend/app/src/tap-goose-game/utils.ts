@@ -1,7 +1,7 @@
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 
-export const validatePubSubMessage = async function validatePubSubMessage<
+export const validateDto = async function validatePubSubMessage<
   T extends object,
 >(dtoClass: new () => T, message: any): Promise<T> {
   const instance = plainToInstance(dtoClass, message);
@@ -12,3 +12,13 @@ export const validatePubSubMessage = async function validatePubSubMessage<
   }
   return instance;
 };
+
+export const getStatusOkResponse = (payload: Record<string, any> = {}) => ({
+  status: 'ok',
+  ...payload,
+});
+
+export const getStatusErrorResponse = (message: string) => ({
+  status: 'error',
+  message,
+});

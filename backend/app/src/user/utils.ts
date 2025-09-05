@@ -1,15 +1,11 @@
 import { CreateUserDto } from './dto/create-user.dto';
-import { UserRole } from './dto/types';
+import { UserRoleEnum } from './dto/types';
 
 export const getUserRoleOnCreate = (
   createUserDto: CreateUserDto,
-  isAdmin: boolean = false,
-): UserRole[] => {
-  if (isAdmin) {
-    return [UserRole.ADMIN];
-  }
+): UserRoleEnum[] => {
   if (createUserDto.username === 'Никита') {
-    return [UserRole.USER, UserRole.NIKITA];
+    return [UserRoleEnum.USER, UserRoleEnum.NIKITA];
   }
-  return [UserRole.USER];
+  return [UserRoleEnum.USER];
 };

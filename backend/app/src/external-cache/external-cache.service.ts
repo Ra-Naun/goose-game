@@ -6,7 +6,7 @@ import { Redis } from 'ioredis';
 export class ExternalCacheService {
   private readonly logger = new Logger(ExternalCacheService.name);
 
-  constructor(@InjectRedis() private readonly redis: Redis) { }
+  constructor(@InjectRedis() private readonly redis: Redis) {}
 
   async set<T>(key: string, value: T, ttlSeconds?: number): Promise<void> {
     try {
@@ -31,6 +31,42 @@ export class ExternalCacheService {
     } catch (error) {
       this.logger.error(
         `Failed to get key ${key} from cache: ${error.message}`,
+      );
+      throw error;
+    }
+  }
+
+  async getKeysByPattern(pattern: string): Promise<string[]> {
+    const keys: string[] = [];
+    let cursor = '0';
+
+    do {
+      const [nextCursor, foundKeys] = await this.redis.scan(
+        cursor,
+        'MATCH',
+        pattern,
+        'COUNT',
+        100,
+      );
+      cursor = nextCursor;
+      keys.push(...foundKeys);
+    } while (cursor !== '0');
+
+    return keys;
+  }
+
+  async getManyByPattern<T>(pattern: string): Promise<Array<T>> {
+    try {
+      const keys = await this.getKeysByPattern(pattern);
+      const values = await Promise.all(keys.map((key) => this.redis.get(key)));
+
+      const parsedValues: Array<T> = values
+        .filter((value) => value !== null)
+        .map((value) => JSON.parse(value) as T);
+      return parsedValues;
+    } catch (error) {
+      this.logger.error(
+        `Failed to get by pattern ${pattern} from cache: ${error.message}`,
       );
       throw error;
     }

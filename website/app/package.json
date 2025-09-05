@@ -7,23 +7,49 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@pixi/react": "^8.0.3",
+    "@tanstack/react-devtools": "^0.6.3",
+    "@tanstack/react-query": "^5.85.6",
+    "@tanstack/react-router": "^1.131.31",
+    "@tanstack/react-router-devtools": "^1.131.35",
+    "axios": "^1.11.0",
+    "axios-retry": "^4.5.0",
+    "pixi-viewport": "^6.0.3",
+    "pixi.js": "^8.12.0",
     "react": "^19.1.1",
-    "react-dom": "^19.1.1"
+    "react-dom": "^19.1.1",
+    "react-toastify": "^11.0.5",
+    "socket.io-client": "^4.8.1",
+    "zustand": "^5.0.8"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "^3.3.1",
     "@eslint/js": "^9.33.0",
+    "@tailwindcss/postcss": "^4.1.12",
+    "@types/node": "^24.3.0",
     "@types/react": "^19.1.10",
     "@types/react-dom": "^19.1.7",
     "@vitejs/plugin-react-swc": "^4.0.0",
+    "autoprefixer": "^10.4.21",
     "eslint": "^9.33.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
+    "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^16.3.0",
+    "postcss": "^8.5.6",
+    "prettier": "^3.6.2",
+    "tailwind-scrollbar": "^4.0.2",
+    "tailwindcss": "^4.1.12",
+    "tw-elements-react": "^1.0.0-alpha-end",
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.39.1",
-    "vite": "^7.1.2"
+    "vite": "^7.1.2",
+    "web-vitals": "^5.1.0"
   }
 }

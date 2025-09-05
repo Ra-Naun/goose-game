@@ -5,7 +5,7 @@ import {
   getInitAdminPassword,
   getInitAdminUsername,
 } from '../../src/config/env.config';
-import { UserRole } from '../../src/user/dto/types';
+import { UserRoleEnum } from '../../src/user/dto/types';
 
 dotenv.config();
 
@@ -13,14 +13,14 @@ const getUserData = async (
   username: string,
   email: string,
   password: string,
-  roles: Array<UserRole>,
+  roles: Array<UserRoleEnum>,
 ) => {
   const hashedPassword = await hashPassword(password);
   return { username, email, hashedPassword, roles };
 };
 
 export const getUsersData = async () => {
-  const userRole = [UserRole.USER];
+  const userRole = [UserRoleEnum.USER];
   const usersData = [
     await getUserData('Ivan', 'ivan@email.com', 'ivan123', userRole),
     await getUserData('Petr', 'petr@email.com', 'petr123', userRole),
@@ -37,7 +37,7 @@ export const getUsersData = async () => {
   ];
 
   const adminPass = getInitAdminPassword();
-  const adminRole = [UserRole.ADMIN];
+  const adminRole = [UserRoleEnum.ADMIN];
   const adminUsername = getInitAdminUsername();
   const adminEmail = getInitAdminEmail();
   if (adminUsername && adminEmail && adminPass) {

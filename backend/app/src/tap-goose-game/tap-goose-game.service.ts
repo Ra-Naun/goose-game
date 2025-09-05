@@ -1,38 +1,22 @@
-import { Injectable } from '@nestjs/common';
-import { InjectRedis } from '@nestjs-modules/ioredis';
-import { Redis } from 'ioredis';
-import uuid4 from 'uuid4';
-import { REDIS_EVENTS, REDIS_KEYS, WEBSOCKET_ROOM } from './config';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { REDIS_EVENTS, REDIS_KEYS, USER_ONLINE_EXPIRATION } from './config';
 import { TapGooseGamePubSubService } from './pub-sub.service';
 import { ExternalCacheService } from 'src/external-cache/external-cache.service';
-import { validatePubSubMessage } from './utils';
+import { validateDto } from './utils';
 import {
-  GameMatchDto,
-  UpdateGooseGameMatchPubSubEventDto,
+  CreateMatchDto,
   UserGooseTapPubSubEventDto,
-  UserJoinedOrLeftMatchPubSubEventDto,
+  UserOnlineChangedPubSubEventDto,
 } from './dto';
 import { PrismaService } from 'src/prisma/prisma.service';
-
-const ROUND_DURATION = 60 * 1000; // 60 секунд
-const COOLDOWN_DURATION = 30 * 1000; // 30 секунд
-const MAX_PLAYERS_IN_MATCH = 10;
-
-enum MatchStatus {
-  WAITING = 'WAITING',
-  ONGOING = 'ONGOING',
-  FINISHED = 'FINISHED',
-}
-
-interface GameMatch {
-  id: string;
-  players: Record<string, number>;
-  status: MatchStatus;
-  cooldownEndTime: number; // timestamp окончания обратного отсчёта
-  maxPlayers: number;
-  startTime: number; // timestamp начала раунда
-  endTime: number; // timestamp окончания раунда
-}
+import { $Enums } from '@prisma/client';
+import {
+  GameMatch,
+  HistoryOfGameMatch,
+  MatchStatus,
+  UserMatchScore,
+} from './types';
+import { MatchSchedulerService } from './match-scheduler.service';
 
 @Injectable()
 export class TapGooseGameService {
@@ -40,6 +24,7 @@ export class TapGooseGameService {
     private readonly cacheService: ExternalCacheService,
     private readonly pubSubService: TapGooseGamePubSubService,
     private readonly prisma: PrismaService,
+    private readonly matchScheduler: MatchSchedulerService,
   ) { }
 
   private readonly throttleLimitMs = 10; //in ms
@@ -53,165 +38,19 @@ export class TapGooseGameService {
     return match;
   }
 
-  async createMatch(playerId: string): Promise<void> {
-    const id = uuid4();
-    const now = Date.now();
-    const cooldownEndTime = now + COOLDOWN_DURATION;
-    const endTime = cooldownEndTime + ROUND_DURATION;
-    const match: GameMatch = {
-      id,
-      players: { [playerId]: 0 },
-      status: MatchStatus.WAITING,
-      maxPlayers: MAX_PLAYERS_IN_MATCH,
-      startTime: cooldownEndTime,
-      cooldownEndTime,
-      endTime,
-    };
-
-    const user_joined_msg = await validatePubSubMessage(
-      UserJoinedOrLeftMatchPubSubEventDto,
-      { playerId, matchId: id },
-    );
-    await this.pubSubService.publish(
-      REDIS_EVENTS.GOOSE_MATCH_USER_JOINED,
-      JSON.stringify(user_joined_msg),
-    );
-
-    await this.cacheService.set(
-      REDIS_KEYS.getMatchKey(id),
-      JSON.stringify(match),
-    );
-
-    const match_created_msg = await validatePubSubMessage(GameMatchDto, match);
-    await this.pubSubService.publish(
-      REDIS_EVENTS.GOOSE_MATCH_CREATED,
-      JSON.stringify(match_created_msg),
-    );
-    setTimeout(async () => {
-      await this.startMatch(id);
-    }, COOLDOWN_DURATION);
-
-    setTimeout(async () => {
-      await this.endMatch(id);
-    }, COOLDOWN_DURATION + ROUND_DURATION);
+  async createMatch(playerId: string, dto: CreateMatchDto): Promise<string> {
+    return await this.matchScheduler.createMatch(playerId, dto);
   }
 
   async addPlayerToMatch(matchId: string, playerId: string): Promise<void> {
-    const match = await this.getMatch(matchId);
-    if (match.status === MatchStatus.ONGOING) {
-      throw new Error('Cannot join a match that has already started');
-    }
-    if (match.status === MatchStatus.FINISHED) {
-      throw new Error('Cannot join a match that has ended');
-    }
-    if (playerId in match.players) {
-      return;
-    }
-    if (Object.keys(match.players).length >= MAX_PLAYERS_IN_MATCH) {
-      throw new Error('Match is full');
-    }
-    match.players[playerId] = 0;
-    const key = REDIS_KEYS.getMatchKey(matchId);
-    await this.cacheService.set(key, JSON.stringify(match));
-    const msg = await validatePubSubMessage(
-      UserJoinedOrLeftMatchPubSubEventDto,
-      { playerId, matchId },
-    );
-    await this.pubSubService.publish(
-      REDIS_EVENTS.GOOSE_MATCH_USER_JOINED,
-      JSON.stringify(msg),
-    );
+    return this.matchScheduler.addPlayerToMatch(matchId, playerId);
   }
 
   async removePlayerFromMatch(
     matchId: string,
     playerId: string,
   ): Promise<void> {
-    const match = await this.getMatch(matchId);
-    if (!(playerId in match.players)) return;
-    delete match.players[playerId];
-    const key = REDIS_KEYS.getMatchKey(matchId);
-    await this.cacheService.set(key, JSON.stringify(match));
-    const msg = await validatePubSubMessage(
-      UserJoinedOrLeftMatchPubSubEventDto,
-      { playerId, matchId },
-    );
-    await this.pubSubService.publish(
-      REDIS_EVENTS.GOOSE_MATCH_USER_LEFT,
-      JSON.stringify(msg),
-    );
-    if (Object.keys(match.players).length === 0) {
-      await this.endMatch(matchId);
-    }
-  }
-
-  async startMatch(matchId: string): Promise<void> {
-    const match = await this.getMatch(matchId);
-    match.status = MatchStatus.ONGOING;
-    const key = REDIS_KEYS.getMatchKey(matchId);
-    await this.cacheService.set(key, JSON.stringify(match));
-    const msg = await validatePubSubMessage(
-      UpdateGooseGameMatchPubSubEventDto,
-      { id: matchId, started: true },
-    );
-    await this.pubSubService.publish(
-      REDIS_EVENTS.GOOSE_MATCH_STATE,
-      JSON.stringify(msg),
-    );
-  }
-
-  async endMatch(matchId: string): Promise<void> {
-    const match = await this.getMatch(matchId);
-    match.status = MatchStatus.FINISHED;
-    const key = REDIS_KEYS.getMatchKey(matchId);
-    await this.cacheService.set(key, JSON.stringify(match));
-    const msg = await validatePubSubMessage(
-      UpdateGooseGameMatchPubSubEventDto,
-      { id: matchId, ended: true },
-    );
-    await this.pubSubService.publish(
-      REDIS_EVENTS.GOOSE_MATCH_STATE,
-      JSON.stringify(msg),
-    );
-    for (const playerId of Object.keys(match.players)) {
-      const msg = await validatePubSubMessage(
-        UserJoinedOrLeftMatchPubSubEventDto,
-        { playerId, matchId: match.id },
-      );
-      await this.pubSubService.publish(
-        REDIS_EVENTS.GOOSE_MATCH_USER_LEFT,
-        JSON.stringify(msg),
-      );
-    }
-    await this.cacheService.del(REDIS_KEYS.getMatchKey(match.id));
-    await this.saveMatchResultsToDatabase(match);
-  }
-
-  private saveMatchResultsToDatabase(match: GameMatch) {
-    // Пример сохранения результатов матча в БД
-    const matchRecord = this.prisma.match.create({
-      data: {
-        id: match.id,
-        startTime: new Date(match.startTime),
-        endTime: new Date(match.endTime),
-        cooldownEndTime: new Date(match.cooldownEndTime),
-        maxPlayers: match.maxPlayers,
-        status: match.status,
-      },
-    });
-
-    const playerRecords = Object.entries(match.players).map(
-      ([playerId, score]) =>
-        this.prisma.userMatchScore.create({
-          data: {
-            matchId: match.id,
-            playerId,
-            score,
-          },
-        }),
-    );
-
-    return this.prisma.$transaction([matchRecord, ...playerRecords]);
+    return this.matchScheduler.removePlayerFromMatch(matchId, playerId);
   }
 
   private async validateTapGoose(
@@ -234,9 +73,10 @@ export class TapGooseGameService {
     );
 
     const match = await this.getMatch(matchId);
-    if (now < match.cooldownEndTime)
+    if (match.status === MatchStatus.WAITING)
       throw new Error('Match has not started yet');
-    if (now > match.endTime) throw new Error('Match has ended');
+    if (match.status === MatchStatus.FINISHED)
+      throw new Error('Match has ended');
     if (!(playerId in match.players)) throw new Error('Player not found');
     if (tapCount < 0) throw new Error('Invalid tap count');
   }
@@ -254,19 +94,165 @@ export class TapGooseGameService {
     await this.validateTapGoose(matchId, playerId, tapCount);
     const match = await this.getMatch(matchId);
     match.players[playerId] += tapCount;
+
+    const msg = await validateDto(UserGooseTapPubSubEventDto, {
+      matchId,
+      playerId,
+      score: match.players[playerId],
+    });
+
     await this.cacheService.set(
       REDIS_KEYS.getMatchKey(matchId),
       JSON.stringify(match),
     );
 
-    const msg = await validatePubSubMessage(UserGooseTapPubSubEventDto, {
-      matchId,
-      playerId,
-      score: match.players[playerId],
-    });
     await this.pubSubService.publish(
       REDIS_EVENTS.GOOSE_MATCH_TAP,
       JSON.stringify(msg),
     );
+  }
+
+  async IMOnline(playerId: string): Promise<void> {
+    const key = REDIS_KEYS.getUserOnlineKey(playerId);
+
+    const isOnline = await this.cacheService.get<boolean>(key);
+    await this.cacheService.set(key, true, USER_ONLINE_EXPIRATION);
+
+    setTimeout(
+      async () => {
+        const isOnline = await this.cacheService.get<boolean>(key);
+        if (!isOnline) {
+          const msg = await validateDto(UserOnlineChangedPubSubEventDto, {
+            playerId,
+            isOnline: false,
+          });
+          await this.pubSubService.publish(
+            REDIS_EVENTS.ONLINE_USERS_CHANGED,
+            JSON.stringify([msg]),
+          );
+        }
+      },
+      (USER_ONLINE_EXPIRATION + 10) * 1000,
+    ); // +10 seconds buffer
+
+    if (isOnline) return; // already online, no need to notify
+
+    const msg = await validateDto(UserOnlineChangedPubSubEventDto, {
+      playerId,
+      isOnline: true,
+    });
+    await this.pubSubService.publish(
+      REDIS_EVENTS.ONLINE_USERS_CHANGED,
+      JSON.stringify([msg]),
+    );
+  }
+
+  async getAvailableMatches(): Promise<GameMatch[]> {
+    return this.matchScheduler.getAvailableMatches();
+  }
+
+  async getUserMatchesHistory(userId: string): Promise<HistoryOfGameMatch[]> {
+    const matchScores = await this.prisma.userMatchScore.findMany({
+      where: { playerId: userId },
+      include: {
+        match: {
+          include: {
+            scores: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    username: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      orderBy: { match: { startTime: 'desc' } },
+    });
+
+    const matches: HistoryOfGameMatch[] = matchScores
+      .filter((score) => {
+        return score.match.status === $Enums.MatchStatus.FINISHED;
+      })
+      .map((score) => {
+        const match = score.match;
+        const players: Array<UserMatchScore> = [];
+        for (const s of match.scores) {
+          if (s.user) {
+            players.push({
+              playerId: s.playerId,
+              username: s.user.username,
+              score: s.score,
+            });
+          }
+        }
+
+        return {
+          id: match.id,
+          title: match.title,
+          players,
+          status: match.status as MatchStatus,
+          maxPlayers: match.maxPlayers,
+          cooldownMs: match.cooldownMs,
+          matchDurationSeconds: match.matchDurationSeconds,
+          createdTime: match.createdTime.getTime(),
+          startTime: match.startTime.getTime(),
+          endTime: match.endTime.getTime(),
+        } as HistoryOfGameMatch;
+      });
+
+    return matches;
+  }
+
+  async getUserMatchHistory(
+    matchId: string,
+  ): Promise<HistoryOfGameMatch | null> {
+    const match = await this.prisma.match.findUnique({
+      where: { id: matchId },
+      include: {
+        scores: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                username: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!match || match.status !== $Enums.MatchStatus.FINISHED) {
+      throw new NotFoundException('Match not found or not finished');
+    }
+
+    const players: Array<UserMatchScore> = [];
+
+    for (const score of match.scores) {
+      if (score.user) {
+        players.push({
+          playerId: score.playerId,
+          username: score.user.username,
+          score: score.score,
+        });
+      }
+    }
+
+    return {
+      id: match.id,
+      title: match.title,
+      players,
+      status: match.status as MatchStatus,
+      maxPlayers: match.maxPlayers,
+      cooldownMs: match.cooldownMs,
+      matchDurationSeconds: match.matchDurationSeconds,
+      createdTime: match.createdTime.getTime(),
+      startTime: match.startTime.getTime(),
+      endTime: match.endTime.getTime(),
+    };
   }
 }

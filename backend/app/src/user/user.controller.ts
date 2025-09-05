@@ -8,19 +8,23 @@ import {
   Delete,
   Request,
   UseGuards,
+  ForbiddenException,
 } from '@nestjs/common';
 
 import { UsersService } from './user.service';
-import { UserDto } from './dto/user.dto';
+import { OnlineUsers, SerializedUserForUI, UserDto } from './dto/user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
 import { CreateUserDto } from './dto/create-user.dto';
 import { ApiBearerAuth, ApiBody, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/guards/jwt.guard';
-import { UserRole } from './dto/types';
+import { UserRoleEnum } from './dto/types';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { TOKEN_KEY } from 'src/auth/config';
-import { RolesGuard } from 'src/auth/guards/roles.guard';
+import {
+  checkIsUserHasRequiredRole,
+  RolesGuard,
+} from 'src/auth/guards/roles.guard';
 import type { JwtRequest } from 'src/types/request-user';
 
 @ApiTags('User')
@@ -31,38 +35,62 @@ export class UserController {
   @ApiBearerAuth(TOKEN_KEY)
   @UseGuards(JwtAuthGuard)
   @Get('me')
-  getCurrentUser(
-    @Request() req: JwtRequest,
-  ): Omit<UserDto, 'hashedPassword'> | null {
+  getCurrentUser(@Request() req: JwtRequest): SerializedUserForUI | null {
     if (!req.user) {
       return null;
     }
 
-    const { hashedPassword: _, ...otherData } = req.user;
-    return otherData;
+    return UserDto.serializeForUI(req.user);
   }
 
   @ApiBearerAuth(TOKEN_KEY)
   @UseGuards(JwtAuthGuard)
-  @Patch('me')
+  @Patch('user')
   async updateCurrentUser(
     @Request() req: JwtRequest,
     @Body() dto: UpdateUserDto,
-  ): Promise<UserDto | null> {
+  ): Promise<SerializedUserForUI | null> {
+    if (req.user.id !== dto.id) {
+      const requiredRoles = [UserRoleEnum.ADMIN];
+      const isValidPermissions = checkIsUserHasRequiredRole(
+        req.user,
+        requiredRoles,
+      );
+
+      if (!isValidPermissions) {
+        throw new ForbiddenException('Access denied');
+      }
+    }
+
     await this.userService.update(req.user.id, dto);
-    return this.userService.findById(req.user.id);
+    const userDto = await this.userService.findById(req.user.id);
+    if (!userDto) {
+      return null;
+    }
+    return UserDto.serializeForUI(userDto);
   }
 
   @ApiBearerAuth(TOKEN_KEY)
   @ApiBody({
     type: CreateUserDto,
-    description: 'Json structure for admin user object',
+    description: 'Json structure for new user object',
   })
   @UseGuards(RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRoleEnum.ADMIN)
   @UseGuards(JwtAuthGuard)
-  @Post('register-admin')
-  async registerAdmin(@Body() dto: CreateUserDto): Promise<UserDto> {
-    return this.userService.create(dto, true);
+  @Post('register-user')
+  async registerAdmin(
+    @Body() dto: CreateUserDto,
+  ): Promise<SerializedUserForUI> {
+    const userDto = await this.userService.create(dto);
+    return UserDto.serializeForUI(userDto);
+  }
+
+  @ApiBearerAuth(TOKEN_KEY)
+  @UseGuards(JwtAuthGuard)
+  @Get('online-users')
+  async getOnlineUsers(): Promise<OnlineUsers> {
+    const usersInfo = await this.userService.getOnlineUsers();
+    return usersInfo;
   }
 }

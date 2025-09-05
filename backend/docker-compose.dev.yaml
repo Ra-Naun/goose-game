@@ -6,6 +6,8 @@ services:
     build:
       context: .
       dockerfile: ./docker/dev/Dockerfile
+    environment:
+      - SERVER_ID=1
     env_file:
       - ./docker/dev/.env
     ports:
@@ -21,6 +23,8 @@ services:
     build:
       context: .
       dockerfile: ./docker/dev/Dockerfile
+    environment:
+      - SERVER_ID=2
     env_file:
       - ./docker/dev/.env
     volumes:
@@ -28,12 +32,14 @@ services:
     restart: always
     networks:
       - backend-network
-    
+
   backend-dev-instance-3:
     container_name: backend-dev-instance-3
     build:
       context: .
       dockerfile: ./docker/dev/Dockerfile
+    environment:
+      - SERVER_ID=3
     env_file:
       - ./docker/dev/.env
     volumes:

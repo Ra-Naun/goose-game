@@ -7,6 +7,8 @@ import { UsersService } from 'src/user/user.service';
 import { dynamicJwtConfig } from 'src/auth/config';
 import { JwtModule } from '@nestjs/jwt';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { TapGooseGameController } from './tap-goose-game.controller';
+import { MatchSchedulerService } from './match-scheduler.service';
 
 @Module({
   imports: [
@@ -15,13 +17,15 @@ import { PrismaService } from 'src/prisma/prisma.service';
       secret: dynamicJwtConfig().secret,
     }),
   ],
+  controllers: [TapGooseGameController],
   providers: [
     TapGooseGameGateway,
     TapGooseGamePubSubService,
+    MatchSchedulerService,
     TapGooseGameService,
     ExternalCacheService,
     PrismaService,
     UsersService,
   ],
 })
-export class TapGooseGameModule { }
+export class TapGooseGameModule {}

@@ -4,7 +4,12 @@ import { UsersService } from 'src/user/user.service';
 import { JwtService } from '@nestjs/jwt';
 import { comparePasswords } from 'services/crypto';
 import { UserDto } from 'src/user/dto/user.dto';
-import { LoginReturn, LoginReturnPayload } from './types';
+import {
+  LoginReturn,
+  LoginReturnPayload,
+  LogoutReturn,
+  RegisterReturn,
+} from './types';
 import { TOKEN_KEY } from './config';
 
 @Injectable()
@@ -12,7 +17,7 @@ export class AuthService {
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
-  ) { }
+  ) {}
 
   async validateUser(email: string, pass: string): Promise<any> {
     const user = await this.usersService.findByEmail(email);
@@ -32,14 +37,14 @@ export class AuthService {
     };
   }
 
-  async logout(): Promise<{ message: string }> {
+  async logout(): Promise<LogoutReturn> {
     // Для JWT стратегии logout обычно реализуется на клиенте путем удаления токена.
     // На сервере можно просто вернуть сообщение об успешном выходе.
     // Можно также реализовать черный список токенов, если требуется.
     return { message: 'You have successfully logged out' };
   }
 
-  async register(dto: CreateUserDto) {
+  async register(dto: CreateUserDto): Promise<RegisterReturn> {
     try {
       const user = await this.usersService.create(dto);
       return this.login(user);
