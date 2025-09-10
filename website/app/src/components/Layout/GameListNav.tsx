@@ -1,18 +1,12 @@
-import { getTapGooseLobbyPath } from "@/src/router/pathes";
+import { tapGooseLobbyPath } from "@/src/router/paths";
 import { Link } from "../Goose-UI/Link";
-import { url } from "inspector";
 
-type GameNavItem = {
-  title: string;
-  url: string;
-};
-
-const gamesNavData: Array<GameNavItem> = [
+const gamesNavData = [
   {
     title: "Tap Goose",
-    url: getTapGooseLobbyPath(),
+    url: tapGooseLobbyPath,
   },
-];
+] as const;
 
 export const GameListNav: React.FC = () => {
   return (

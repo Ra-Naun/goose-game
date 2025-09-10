@@ -17,7 +17,7 @@ export class AuthService {
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
-  ) {}
+  ) { }
 
   async validateUser(email: string, pass: string): Promise<any> {
     const user = await this.usersService.findByEmail(email);
@@ -47,7 +47,7 @@ export class AuthService {
   async register(dto: CreateUserDto): Promise<RegisterReturn> {
     try {
       const user = await this.usersService.create(dto);
-      return this.login(user);
+      return await this.login(user);
     } catch (err) {
       throw new ForbiddenException('Registration error');
     }

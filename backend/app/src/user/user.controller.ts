@@ -1,11 +1,8 @@
 import {
   Controller,
   Get,
-  Post,
   Body,
   Patch,
-  Param,
-  Delete,
   Request,
   UseGuards,
   ForbiddenException,
@@ -15,16 +12,11 @@ import { UsersService } from './user.service';
 import { OnlineUsers, SerializedUserForUI, UserDto } from './dto/user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
-import { CreateUserDto } from './dto/create-user.dto';
-import { ApiBearerAuth, ApiBody, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/guards/jwt.guard';
 import { UserRoleEnum } from './dto/types';
-import { Roles } from 'src/auth/decorators/roles.decorator';
 import { TOKEN_KEY } from 'src/auth/config';
-import {
-  checkIsUserHasRequiredRole,
-  RolesGuard,
-} from 'src/auth/guards/roles.guard';
+import { checkIsUserHasRequiredRole } from 'src/auth/guards/roles.guard';
 import type { JwtRequest } from 'src/types/request-user';
 
 @ApiTags('User')
@@ -67,22 +59,6 @@ export class UserController {
     if (!userDto) {
       return null;
     }
-    return UserDto.serializeForUI(userDto);
-  }
-
-  @ApiBearerAuth(TOKEN_KEY)
-  @ApiBody({
-    type: CreateUserDto,
-    description: 'Json structure for new user object',
-  })
-  @UseGuards(RolesGuard)
-  @Roles(UserRoleEnum.ADMIN)
-  @UseGuards(JwtAuthGuard)
-  @Post('register-user')
-  async registerAdmin(
-    @Body() dto: CreateUserDto,
-  ): Promise<SerializedUserForUI> {
-    const userDto = await this.userService.create(dto);
     return UserDto.serializeForUI(userDto);
   }
 

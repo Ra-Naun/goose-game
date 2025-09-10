@@ -5,8 +5,8 @@ import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import { Login } from "@/src/pages/Auth/Login";
 import { Register } from "@/src/pages/Auth/Register";
 import { Lobby } from "@/src/pages/Games/TapGoose/Lobby";
-import { Match } from "@/src/pages/Games/TapGoose/Match/Match";
-import { MatchHistory } from "@/src/pages/Games/TapGoose/Match/MatchHistory";
+import { Match } from "@/src/pages/Games/TapGoose/Match";
+import { MatchHistory } from "@/src/pages/Games/TapGoose/MatchHistory";
 import { Profile } from "@/src/pages/Profile";
 import { NotFound } from "@/src/pages/NotFound";
 import { RequireAuth, RequireNoAuth } from "./authWrappers";
@@ -16,10 +16,10 @@ import {
   profilePath,
   registerPath,
   rootPath,
-  tapGooseLobbyPaths,
-  tapGooseMatchHistoryPaths,
-  tapGooseMatchPaths,
-} from "./pathes";
+  tapGooseLobbyPath,
+  tapGooseMatchHistoryPath,
+  tapGooseMatchPath,
+} from "./paths";
 
 export const rootRoute = createRootRoute({
   component: () => (
@@ -69,7 +69,7 @@ export const registerRoute = createRoute({
 
 export const lobbyRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: tapGooseLobbyPaths,
+  path: tapGooseLobbyPath,
   component: () => (
     <RequireAuth>
       <Lobby />
@@ -79,7 +79,7 @@ export const lobbyRoute = createRoute({
 
 export const matchRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: tapGooseMatchPaths,
+  path: tapGooseMatchPath,
   component: () => (
     <RequireAuth>
       <Match />
@@ -89,7 +89,7 @@ export const matchRoute = createRoute({
 
 export const matchHistoryRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: tapGooseMatchHistoryPaths,
+  path: tapGooseMatchHistoryPath,
   component: () => (
     <RequireAuth>
       <MatchHistory />

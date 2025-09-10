@@ -1,14 +1,15 @@
+import { AvatarImage } from "@/src/components/Goose-UI/Avatar/AvatarImage";
 import { Input } from "@/src/components/Goose-UI/Forms/Input";
 import { Loading } from "@/src/components/Goose-UI/Loading";
-import { useOnlineUsers } from "@/src/hooks/games/tapGoose/useOnlineUsers";
-import { DEFAULT_AVATAR_URL } from "@/src/pages/Profile";
+import { OnlineStatus } from "@/src/components/Goose-UI/Avatar/OnlineStatus";
+import { useOnlineUsers } from "@/src/hooks/user/useOnlineUsers";
 import { getUserInitials } from "@/src/utils";
 import { useMemo, useState } from "react";
 
 type OnlineUserItemProps = {
   username: string;
   email: string;
-  avatarUrl: string | null;
+  avatarUrl: string;
   isOnline: boolean;
 };
 
@@ -16,26 +17,17 @@ const OnlineUserItem: React.FC<OnlineUserItemProps> = (props) => {
   const { username, email, avatarUrl, isOnline } = props;
   return (
     <li
-      className="flex items-center py-2 px-3 rounded hover:bg-blue-900 cursor-pointer text-white space-x-3 transition"
+      className="flex items-center py-2 px-3 rounded hover:bg-blue-900 cursor-pointer text-white space-x-3 transition-colors ease-in-out duration-300"
       role="listitem"
       tabIndex={0}
     >
-      <img
-        src={avatarUrl || DEFAULT_AVATAR_URL}
-        alt={`${getUserInitials(username)} avatar`}
-        className="w-8 h-8 rounded-full object-cover"
-      />
+      <AvatarImage avatarUrl={avatarUrl} username={username} />
       <div className="flex flex-col">
         <span className="font-semibold">{username}</span>
         <span className="text-xs text-gray-400">{email}</span>
       </div>
-      {isOnline && (
-        <span
-          className="ml-auto w-3 h-3 bg-green-500 rounded-full"
-          title="Online"
-          aria-label="Пользователь онлайн"
-        ></span>
-      )}
+
+      <OnlineStatus isOnline={isOnline} />
     </li>
   );
 };

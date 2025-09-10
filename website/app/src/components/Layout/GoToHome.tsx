@@ -1,4 +1,4 @@
-import { getStartPagePath } from "@/src/router/pathes";
+import { getStartPagePath } from "@/src/router/paths";
 import { Link } from "../Goose-UI/Link";
 
 export const GoToHome: React.FC = () => {

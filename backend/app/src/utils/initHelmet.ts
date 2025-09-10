@@ -9,7 +9,6 @@ const HELMET_OPTIONS: Readonly<HelmetOptions> = {
       'img-src': ["'self'", 'data:', 'https:'],
       'script-src': ["'self'"],
       'object-src': ["'none'"],
-      // Добавьте другие директивы по необходимости
     },
   },
   crossOriginEmbedderPolicy: true,
@@ -21,7 +20,6 @@ const HELMET_OPTIONS: Readonly<HelmetOptions> = {
   noSniff: true,
   frameguard: { action: 'deny' },
   hidePoweredBy: true,
-  // отключите или настройте другие политики по необходимости
 };
 
 export const initHelmet = (app: INestApplication<any>) => {

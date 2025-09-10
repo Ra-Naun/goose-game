@@ -8,68 +8,67 @@ import {
   Validate,
 } from 'class-validator';
 import { PartialType } from '@nestjs/mapped-types';
-import { IsPlayersRecordConstraint } from './validators/players-array.validator';
-import { MatchStatus } from '../types';
+import { IsPlayersRecordConstraint } from './validators/players-record.validator';
+import { MatchPlayerInfo, MatchStatus } from '../types';
 import { IsMatchStatusConstraint } from './validators/match-status.validator';
 import { UserRoleEnum } from 'src/user/dto/types';
-import { IsUserRoleArrayConstraint } from './validators/roles-array.validator';
+import { IsUserRoleArrayConstraint } from '../../user/dto/validators/roles-array.validator';
+import { IsScoresRecordConstraint } from './validators/scores-record.validator';
 
-export class TapGooseDto {
+export class CreateGooseMatchRequestDto {
   @IsString()
-  matchId!: string;
-
-  @IsString()
-  @IsInt()
-  tapCount!: number;
-}
-
-export class TapSuccessDto {
-  @IsString()
-  playerId!: string;
-
-  @IsString()
-  matchId!: string;
+  title!: string;
 
   @IsInt()
-  score!: number;
+  maxPlayers!: number;
+
+  @IsInt()
+  cooldownMs!: number;
+
+  @IsInt()
+  matchDurationSeconds!: number;
 }
 
-export class TapErrorDto {
-  @IsString()
-  message!: string;
-}
-
-export class MatchCreatedDto {
+export class MatchPlayerInfoDto {
   @IsString()
   id!: string;
 
-  players!: string[];
-}
-export class GameMatchDto {
   @IsString()
-  id: string;
+  username!: string;
 
   @IsString()
-  title: string;
+  email!: string;
+}
+
+export class GooseGameMatchDto {
+  @IsString()
+  id!: string;
+
+  @IsString()
+  title!: string;
+
+  @IsObject()
+  @Validate(IsScoresRecordConstraint)
+  scores!: Record<string, number>;
 
   @IsObject()
   @Validate(IsPlayersRecordConstraint)
-  players: Record<string, number>;
+  players!: Record<string, MatchPlayerInfoDto>;
 
   @IsInt()
-  maxPlayers: number;
+  maxPlayers!: number;
 
   @IsInt()
-  matchDurationSeconds: number;
+  matchDurationSeconds!: number;
 
   @IsInt()
-  cooldownMs: number;
+  cooldownMs!: number;
 
   @IsInt()
-  createdTime: number; // timestamp
+  createdTime!: number; // timestamp
 
   @Validate(IsMatchStatusConstraint)
-  status: MatchStatus;
+  status!: MatchStatus;
 
   @IsOptional()
   @IsInt()
@@ -84,61 +83,56 @@ export class GameMatchDto {
   endTime?: number; // timestamp окончания раунда
 }
 
-export class UpdateGooseGameMatchPubSubEventDto extends PartialType(
-  GameMatchDto,
-) { }
+export class StartedGooseGameMatchPubSubEventDto {
+  @IsString()
+  id!: string;
 
-export class UserGooseTapPubSubEventDto extends TapSuccessDto { }
+  @IsInt()
+  startTime!: number;
+}
 
-export class UserJoinedOrLeftMatchPubSubEventDto {
+export class EndedGooseGameMatchPubSubEventDto extends PartialType(
+  GooseGameMatchDto,
+) {
+  @IsString()
+  id!: string;
+
+  @IsInt()
+  endTime!: number;
+}
+
+export class TapGooseRequestDto {
+  @IsString()
+  matchId!: string;
+}
+export class UserGooseTapPubSubEventDto {
   @IsString()
   playerId!: string;
 
   @IsString()
   matchId!: string;
+
+  @IsInt()
+  score!: number;
 }
 
-export class UserOnlineChangedPubSubEventDto {
+export class UserJoinOrLeaveGooseMatchRequestDto {
+  @IsString()
+  matchId!: string;
+}
+
+export class UserJoinedGooseMatchPubSubEventDto {
+  @IsObject()
+  matchPlayerInfo!: MatchPlayerInfoDto;
+
+  @IsString()
+  matchId!: string;
+}
+
+export class UserLeaveGooseMatchPubSubEventDto {
   @IsString()
   playerId!: string;
 
-  @IsBoolean()
-  isOnline!: boolean;
-}
-
-export class UserInfoDto {
   @IsString()
-  id: string;
-
-  @IsString()
-  email: string;
-
-  @IsString()
-  username: string;
-
-  @IsArray()
-  @Validate(IsUserRoleArrayConstraint)
-  roles: UserRoleEnum[];
-
-  @IsBoolean()
-  isOnline!: boolean;
-}
-
-export class CreateMatchDto {
-  @IsString()
-  title: string;
-
-  @IsInt()
-  maxPlayers: number;
-
-  @IsInt()
-  cooldownMs: number;
-
-  @IsInt()
-  matchDurationSeconds: number;
-}
-
-export class UserJoinOrLeftMatchDto {
-  @IsString()
-  matchId: string;
+  matchId!: string;
 }

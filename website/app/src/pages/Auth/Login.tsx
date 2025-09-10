@@ -8,7 +8,7 @@ import { ApiError } from "@/src/API/helpers/errors";
 import { UserNotificationService } from "@/src/services/userNotificationService";
 import { userService } from "@/src/services/userService";
 import { Link } from "@/src/components/Goose-UI/Link";
-import { getStartPagePath } from "@/src/router/pathes";
+import { getStartPagePath } from "@/src/router/paths";
 
 export const Login: React.FC = () => {
   const [email, setEmail] = useState("");

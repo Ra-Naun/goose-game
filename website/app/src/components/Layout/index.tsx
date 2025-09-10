@@ -3,9 +3,8 @@ import type { User } from "@/src/store/types";
 import { UserAvatar } from "./UserAvatar";
 import { GoToHome } from "./GoToHome";
 import { GameListNav } from "./GameListNav";
-import { useWebSocketEventHandlers } from "@/src/hooks/useWebSocketEventHandlers";
-import { useIAMOnline } from "@/src/hooks/useIAMOnline";
-import { useConnectWebSocket } from "@/src/hooks/useConnectWebSocket";
+import { useWebSocketEventHandlers } from "@/src/hooks/user/useWebSocketEventHandlers";
+import { useIAMOnline } from "@/src/hooks/user/useIAMOnline";
 
 type LayoutProps = {
   user: User;
@@ -13,7 +12,6 @@ type LayoutProps = {
 };
 
 export const Layout: React.FC<React.PropsWithChildren<LayoutProps>> = ({ user, logout, children }) => {
-  useConnectWebSocket();
   useWebSocketEventHandlers();
   useIAMOnline();
 
@@ -28,7 +26,7 @@ export const Layout: React.FC<React.PropsWithChildren<LayoutProps>> = ({ user, l
         </div>
       </header>
 
-      <main className="w-full flex justify-center">
+      <main className="w-full min-h-screen flex justify-center">
         <div className="container w-full flex-1 ">{children}</div>
       </main>
     </div>

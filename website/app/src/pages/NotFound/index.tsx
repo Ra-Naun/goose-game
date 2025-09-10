@@ -1,5 +1,5 @@
 import { Link } from "@/src/components/Goose-UI/Link";
-import { getStartPagePath } from "@/src/router/pathes";
+import { getStartPagePath } from "@/src/router/paths";
 
 export const NotFound = () => {
   return (

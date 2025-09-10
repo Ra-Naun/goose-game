@@ -1,45 +1,41 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { REDIS_EVENTS, REDIS_KEYS, USER_ONLINE_EXPIRATION } from './config';
-import { TapGooseGamePubSubService } from './pub-sub.service';
+import { REDIS_EVENTS, REDIS_KEYS } from './config';
+import { PubSubService } from '../pub-sub/pub-sub.service';
 import { ExternalCacheService } from 'src/external-cache/external-cache.service';
-import { validateDto } from './utils';
-import {
-  CreateMatchDto,
-  UserGooseTapPubSubEventDto,
-  UserOnlineChangedPubSubEventDto,
-} from './dto';
+import { CreateGooseMatchRequestDto, UserGooseTapPubSubEventDto } from './dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { $Enums } from '@prisma/client';
 import {
   GameMatch,
   HistoryOfGameMatch,
   MatchStatus,
-  UserMatchScore,
+  ActiveMatchIsEnded,
+  MatchPlayers,
+  PlayerScores,
 } from './types';
 import { MatchSchedulerService } from './match-scheduler.service';
+import { UserDto } from 'src/user/dto/user.dto';
+import { HelperService } from './helper.service';
+import { UserRoleEnum } from 'src/user/dto/types';
+import { validateDto } from 'src/utils/validateDto';
 
 @Injectable()
 export class TapGooseGameService {
   constructor(
     private readonly cacheService: ExternalCacheService,
-    private readonly pubSubService: TapGooseGamePubSubService,
+    private readonly pubSubService: PubSubService,
     private readonly prisma: PrismaService,
     private readonly matchScheduler: MatchSchedulerService,
+    private readonly helper: HelperService,
   ) { }
 
   private readonly throttleLimitMs = 10; //in ms
 
-  private async getMatch(matchId: string): Promise<GameMatch> {
-    const data = await this.cacheService.get<string>(
-      REDIS_KEYS.getMatchKey(matchId),
-    );
-    if (!data) throw new Error('Match not found');
-    const match: GameMatch = JSON.parse(data);
-    return match;
-  }
-
-  async createMatch(playerId: string, dto: CreateMatchDto): Promise<string> {
-    return await this.matchScheduler.createMatch(playerId, dto);
+  async createMatch(
+    user: UserDto,
+    dto: CreateGooseMatchRequestDto,
+  ): Promise<string> {
+    return await this.matchScheduler.createMatch(user, dto);
   }
 
   async addPlayerToMatch(matchId: string, playerId: string): Promise<void> {
@@ -53,11 +49,7 @@ export class TapGooseGameService {
     return this.matchScheduler.removePlayerFromMatch(matchId, playerId);
   }
 
-  private async validateTapGoose(
-    matchId: string,
-    playerId: string,
-    tapCount: number,
-  ) {
+  private async validateTapGoose(matchId: string, playerId: string) {
     const throttleKey = REDIS_KEYS.getTapThrottleKey(matchId, playerId);
     const now = Date.now();
 
@@ -72,39 +64,60 @@ export class TapGooseGameService {
       this.throttleLimitMs,
     );
 
-    const match = await this.getMatch(matchId);
-    if (match.status === MatchStatus.WAITING)
+    const matchStatus: MatchStatus | null = await this.cacheService.get(
+      REDIS_KEYS.getMatchStatusKey(matchId),
+    );
+
+    if (!matchStatus) {
+      throw new Error('Match status not found');
+    }
+    if (matchStatus === MatchStatus.WAITING)
       throw new Error('Match has not started yet');
-    if (match.status === MatchStatus.FINISHED)
+    if (matchStatus === MatchStatus.FINISHED)
       throw new Error('Match has ended');
-    if (!(playerId in match.players)) throw new Error('Player not found');
-    if (tapCount < 0) throw new Error('Invalid tap count');
+    if (matchStatus !== MatchStatus.ONGOING) {
+      throw new Error('Invalid match status');
+    }
+    const isPlayerInMatch = await this.helper.isPlayerInMatchCache(
+      matchId,
+      playerId,
+    );
+    if (!isPlayerInMatch) throw new Error('Player not found');
   }
 
-  async tapGoose(
-    matchId: string,
-    playerId: string,
-    tapCount: number = 1,
-  ): Promise<void> {
+  async tapGoose(matchId: string, user: UserDto): Promise<void> {
     // Примечание: текущая реализация хранит только текущее состояние игры в Redis.
     // Если в игре возникнут требования хранения полной истории, отката состояний,
     // поддержки сложной бизнес-логики с множеством правил,
     // а также масштабирования — можно начать использовать подход Event Sourcing и CQRS.
 
-    await this.validateTapGoose(matchId, playerId, tapCount);
-    const match = await this.getMatch(matchId);
-    match.players[playerId] += tapCount;
+    // Так же в случае высокой нагрузки можно рассмотреть агрегацию кликов или батчинг
+    // обновлений на сервере, но в простом случае при хорошем масштабировании это не обязательно
+
+    await this.validateTapGoose(matchId, user.id);
+
+    const tapCount = await this.cacheService.hincrby(
+      REDIS_KEYS.getMatchTapsKey(matchId),
+      user.id,
+      1,
+    );
+
+    const isUserRoleNikita = user.roles.includes(UserRoleEnum.NIKITA);
+
+    const increment = isUserRoleNikita ? 0 : tapCount % 10 === 0 ? 10 : 1;
+
+    const scoresKey = REDIS_KEYS.getMatchScoresKey(matchId);
+    const newScore = await this.cacheService.hincrby(
+      scoresKey,
+      user.id,
+      increment,
+    );
 
     const msg = await validateDto(UserGooseTapPubSubEventDto, {
       matchId,
-      playerId,
-      score: match.players[playerId],
+      playerId: user.id,
+      score: newScore,
     });
-
-    await this.cacheService.set(
-      REDIS_KEYS.getMatchKey(matchId),
-      JSON.stringify(match),
-    );
 
     await this.pubSubService.publish(
       REDIS_EVENTS.GOOSE_MATCH_TAP,
@@ -112,43 +125,33 @@ export class TapGooseGameService {
     );
   }
 
-  async IMOnline(playerId: string): Promise<void> {
-    const key = REDIS_KEYS.getUserOnlineKey(playerId);
-
-    const isOnline = await this.cacheService.get<boolean>(key);
-    await this.cacheService.set(key, true, USER_ONLINE_EXPIRATION);
-
-    setTimeout(
-      async () => {
-        const isOnline = await this.cacheService.get<boolean>(key);
-        if (!isOnline) {
-          const msg = await validateDto(UserOnlineChangedPubSubEventDto, {
-            playerId,
-            isOnline: false,
-          });
-          await this.pubSubService.publish(
-            REDIS_EVENTS.ONLINE_USERS_CHANGED,
-            JSON.stringify([msg]),
-          );
-        }
-      },
-      (USER_ONLINE_EXPIRATION + 10) * 1000,
-    ); // +10 seconds buffer
-
-    if (isOnline) return; // already online, no need to notify
-
-    const msg = await validateDto(UserOnlineChangedPubSubEventDto, {
-      playerId,
-      isOnline: true,
-    });
-    await this.pubSubService.publish(
-      REDIS_EVENTS.ONLINE_USERS_CHANGED,
-      JSON.stringify([msg]),
-    );
+  async getAvailableMatches(userId: string): Promise<GameMatch[]> {
+    return this.helper.getAvailableMatches(userId);
   }
 
-  async getAvailableMatches(): Promise<GameMatch[]> {
-    return this.matchScheduler.getAvailableMatches();
+  async getPlayerActiveMatch(
+    userId: string,
+    matchId: string,
+  ): Promise<GameMatch | ActiveMatchIsEnded> {
+    try {
+      return await this.helper.getPlayerActiveMatchFromCache(userId, matchId);
+    } catch (error) {
+      const isPlayerInMatchDB = await this.helper.isPlayerInMatchFromDB(
+        matchId,
+        userId,
+      );
+
+      if (!isPlayerInMatchDB) {
+        throw error;
+      }
+      const matchStatusFromDB = await this.helper.getMatchStatusFromDB(matchId);
+      if (matchStatusFromDB === $Enums.MatchStatus.FINISHED) {
+        return {
+          status: MatchStatus.FINISHED,
+        };
+      }
+      throw error;
+    }
   }
 
   async getUserMatchesHistory(userId: string): Promise<HistoryOfGameMatch[]> {
@@ -163,6 +166,8 @@ export class TapGooseGameService {
                   select: {
                     id: true,
                     username: true,
+                    email: true,
+                    avatarUrl: true,
                   },
                 },
               },
@@ -179,21 +184,25 @@ export class TapGooseGameService {
       })
       .map((score) => {
         const match = score.match;
-        const players: Array<UserMatchScore> = [];
+        const players: MatchPlayers = {};
+        const scores: PlayerScores = {};
         for (const s of match.scores) {
           if (s.user) {
-            players.push({
-              playerId: s.playerId,
+            scores[s.playerId] = s.score;
+            players[s.playerId] = {
+              id: s.playerId,
               username: s.user.username,
-              score: s.score,
-            });
+              email: s.user.email,
+              avatarUrl: s.user.avatarUrl,
+            };
           }
         }
 
         return {
           id: match.id,
           title: match.title,
-          players,
+          scores: scores,
+          players: players,
           status: match.status as MatchStatus,
           maxPlayers: match.maxPlayers,
           cooldownMs: match.cooldownMs,
@@ -219,6 +228,8 @@ export class TapGooseGameService {
               select: {
                 id: true,
                 username: true,
+                email: true,
+                avatarUrl: true,
               },
             },
           },
@@ -230,22 +241,26 @@ export class TapGooseGameService {
       throw new NotFoundException('Match not found or not finished');
     }
 
-    const players: Array<UserMatchScore> = [];
+    const players: MatchPlayers = {};
+    const scores: PlayerScores = {};
 
-    for (const score of match.scores) {
-      if (score.user) {
-        players.push({
-          playerId: score.playerId,
-          username: score.user.username,
-          score: score.score,
-        });
+    for (const s of match.scores) {
+      if (s.user) {
+        scores[s.playerId] = s.score;
+        players[s.playerId] = {
+          id: s.playerId,
+          username: s.user.username,
+          email: s.user.email,
+          avatarUrl: s.user.avatarUrl,
+        };
       }
     }
 
     return {
       id: match.id,
       title: match.title,
-      players,
+      scores: scores,
+      players: players,
       status: match.status as MatchStatus,
       maxPlayers: match.maxPlayers,
       cooldownMs: match.cooldownMs,

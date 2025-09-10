@@ -10,12 +10,13 @@ datasource db {
 
 model User {
   id              String      @id @default(uuid())
-  username        String   @unique
-  email           String   @unique
-  hashedPassword  String @map("hashed_password")
-  roles           UserRole[] @default([USER])
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  username        String      @unique
+  email           String      @unique
+  avatarUrl       String      @default("/avatars/default-avatar.svg")
+  hashedPassword  String      @map("hashed_password")
+  roles           UserRole[]  @default([USER])
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
 
   matches         UserMatchScore[]    @relation("user_score")
 

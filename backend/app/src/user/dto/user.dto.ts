@@ -1,23 +1,13 @@
-import { IsDate, IsString } from 'class-validator';
+import { IsArray, IsDate, IsString } from 'class-validator';
+import { User } from '@prisma/client';
+
+import { OnlineUserInfoDto } from './online-user.info.dto';
 import { UserRoleEnum } from './types';
-import { $Enums, User } from '@prisma/client';
-import { UserInfoDto } from 'src/tap-goose-game/dto';
-
-const USER_ROLES_MAP: { [key in $Enums.UserRole]: UserRoleEnum } = {
-  ADMIN: UserRoleEnum.ADMIN,
-  USER: UserRoleEnum.USER,
-  NIKITA: UserRoleEnum.NIKITA,
-};
-
-const parsePrismaUserRoleToEnum = (
-  roles: $Enums.UserRole[],
-): UserRoleEnum[] => {
-  return roles.map((role) => USER_ROLES_MAP[role]);
-};
+import { validateDto } from 'src/utils/validateDto';
 
 export type SerializedUserForUI = Omit<UserDto, 'hashedPassword'>;
 
-export type OnlineUsers = UserInfoDto[];
+export type OnlineUsers = OnlineUserInfoDto[];
 export class UserDto {
   @IsString()
   id: string;
@@ -29,6 +19,9 @@ export class UserDto {
   username: string;
 
   @IsString()
+  avatarUrl: string;
+
+  @IsString()
   hashedPassword: string;
 
   @IsDate()
@@ -37,18 +30,13 @@ export class UserDto {
   @IsDate()
   updatedAt: Date;
 
-  @IsString()
+  @IsArray()
   roles: UserRoleEnum[];
 
-  static fromDatabaseItem(item: User) {
-    const userDto = new UserDto();
-    userDto.id = item.id;
-    userDto.email = item.email;
-    userDto.username = item.username;
-    userDto.hashedPassword = item.hashedPassword;
-    userDto.createdAt = item.createdAt;
-    userDto.updatedAt = item.updatedAt;
-    userDto.roles = parsePrismaUserRoleToEnum(item.roles);
+  static async fromDatabaseItem(item: User) {
+    const userDto = await validateDto(UserDto, {
+      ...item,
+    });
     return userDto;
   }
 

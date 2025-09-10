@@ -1,6 +1,7 @@
 import { io, Socket } from "socket.io-client";
 import { authTokenService } from "../services/authTokenService";
 import { useWebSocketStore } from "../store/webSocketStore";
+import uuid4 from "uuid4";
 
 type EventCallback = (data: any) => void;
 
@@ -35,6 +36,7 @@ export class WebsocketClient {
   private readonly url: string;
   private readonly namespace: string;
   private readonly path: string;
+  readonly id: string = uuid4();
 
   constructor(url: string, namespace = "", path = "/socket.io") {
     this.url = url;
@@ -64,13 +66,13 @@ export class WebsocketClient {
       console.info(`WebSocket connected [id=${this.socket?.id}]`);
       this.reconnectAttempts = 0;
       if (!!this.socket?.id) {
-        useWebSocketStore.getState().setConnected(true);
+        useWebSocketStore.getState().setConnected(this.id, true);
       }
     });
 
     this.socket.on("disconnect", (reason) => {
       console.warn(`WebSocket disconnected: ${reason}`);
-      useWebSocketStore.getState().setConnected(false);
+      useWebSocketStore.getState().setConnected(this.id, false);
       if (reason === "io server disconnect") {
         this.socket?.connect();
       }

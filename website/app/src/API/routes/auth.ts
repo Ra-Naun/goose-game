@@ -14,7 +14,7 @@ export const authAPI = {
    */
   login: async (email: string, password: string) => {
     try {
-      return apiClient.post<LoginReturn>(`${NAMESPACE}/login`, { email, password });
+      return await apiClient.post<LoginReturn>(`${NAMESPACE}/login`, { email, password });
     } catch (error) {
       throw transformAxiosError(error);
     }
@@ -26,7 +26,7 @@ export const authAPI = {
    */
   logout: async () => {
     try {
-      return apiClient.post<LogoutReturn>(`${NAMESPACE}/logout`);
+      return await apiClient.post<LogoutReturn>(`${NAMESPACE}/logout`);
     } catch (error) {
       throw transformAxiosError(error);
     }
@@ -41,7 +41,7 @@ export const authAPI = {
    */
   register: async (email: string, username: string, password: string) => {
     try {
-      return apiClient.post<RegisterReturn>(`${NAMESPACE}/register`, { email, username, password });
+      return await apiClient.post<RegisterReturn>(`${NAMESPACE}/register`, { email, username, password });
     } catch (error) {
       throw transformAxiosError(error);
     }

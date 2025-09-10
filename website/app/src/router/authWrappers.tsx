@@ -5,10 +5,8 @@ import { useAuthCheck } from "@/src/hooks/useAuthCheck";
 import { Loading } from "@/src/components/Goose-UI/Loading";
 import { UserNotificationService } from "@/src/services/userNotificationService";
 import { Layout } from "@/src/components/Layout";
-import { useUserStore } from "@/src/store/userStore";
 import { userService } from "@/src/services/userService";
-import { getLoginPath, getStartPagePath } from "./pathes";
-import { useRedirectToActiveGameIfExists } from "../hooks/useRedirectToActiveGameIfExists";
+import { loginPath, getStartPagePath } from "./paths";
 
 type AuthWrapperProps = {
   children: React.ReactNode;
@@ -17,7 +15,6 @@ type AuthWrapperProps = {
 };
 
 const AuthWrapper = ({ children, isAllowed, redirectTo }: AuthWrapperProps) => {
-  useRedirectToActiveGameIfExists();
   const { loading } = useAuthCheck();
 
   if (loading) return <Loading className="min-h-screen" />;
@@ -28,10 +25,8 @@ const AuthWrapper = ({ children, isAllowed, redirectTo }: AuthWrapperProps) => {
 };
 
 export const RequireAuth = ({ children }: { children: React.ReactNode }) => {
-  const { isAuthenticated, error } = useAuthCheck();
+  const { isAuthenticated, error, user } = useAuthCheck();
   const navigate = useNavigate();
-
-  const user = useUserStore((state) => state.user);
 
   useEffect(() => {
     if (error?.message) {
@@ -41,14 +36,13 @@ export const RequireAuth = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <AuthWrapper isAllowed={isAuthenticated} redirectTo="/login">
-      {isAuthenticated && user && (
+      {isAuthenticated && (
         <Layout
           user={user}
           logout={async () => {
             try {
               await userService.logout();
-              useUserStore.getState().setUser(null);
-              navigate({ to: getLoginPath() });
+              navigate({ to: loginPath });
             } catch (error) {
               UserNotificationService.showError(`Logout failed, please try again. Error: ${(error as Error).message}`);
             }

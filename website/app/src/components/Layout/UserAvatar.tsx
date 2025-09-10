@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { getProfilePath } from "@/src/router/pathes";
+import { profilePath } from "@/src/router/paths";
 import type { User } from "@/src/store/types";
-import { DEFAULT_AVATAR_URL } from "@/src/pages/Profile";
 import { Ripple } from "../Goose-UI/Ripple";
 import { getUserInitials } from "@/src/utils";
+import { AvatarImage } from "../Goose-UI/Avatar/AvatarImage";
 
 interface UserMenuListProps extends React.HTMLAttributes<HTMLUListElement> {
   isOpen: boolean;
@@ -65,7 +65,6 @@ type UserAvatarProps = {
 };
 
 export const UserAvatar: React.FC<UserAvatarProps> = ({ user, logout }) => {
-  const userAvatarUrl = user.avatarUrl || DEFAULT_AVATAR_URL;
   const [isDropdownOpen, setDropdownOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -99,7 +98,7 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({ user, logout }) => {
 
   const handleProfileClick = () => {
     closeDropdown();
-    navigate({ to: getProfilePath() });
+    navigate({ to: profilePath });
   };
 
   const handleLogoutClick = () => {
@@ -118,12 +117,7 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({ user, logout }) => {
           onClick={toggleDropdown}
           className="flex items-center justify-center w-10 h-10 rounded-full focus:outline-none cursor-pointer"
         >
-          <img
-            src={user.avatarUrl || DEFAULT_AVATAR_URL}
-            alt={getUserInitials(user.username)}
-            className="rounded-full bg-gray-700 w-10 h-10 object-cover"
-            draggable={false}
-          />
+          <AvatarImage avatarUrl={user.avatarUrl} className="w-10 h-10" username={user.username} />
         </button>
       </Ripple>
 

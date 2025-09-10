@@ -1,16 +1,22 @@
 import { useQuery } from "@tanstack/react-query";
 import { matchService } from "@/src/services/matchService";
 import { STALE_TIME } from "@/src/config/tanQuery";
-import { useGameStore } from "@/src/store/gameStore";
-import { useEffect } from "react";
+import { useAvailableGamesStore } from "@/src/store/availableGamesStore";
+import { useEffect, useMemo } from "react";
+import { useWebSocketStore } from "@/src/store/webSocketStore";
+import { wsClientTapGoose } from "@/src/API/client/wsClientTapGoose";
 
 export const useAvailableMatches = () => {
-  const addMatch = useGameStore((state) => state.addMatch);
-  const matches = useGameStore((state) => state.matches);
+  const isConnected = useWebSocketStore((state) => state.connectedStatuses[wsClientTapGoose.id]);
+  const addMatch = useAvailableGamesStore((state) => state.addMatch);
+  const matches = useAvailableGamesStore((state) => state.matches);
   const queryResult = useQuery({
     queryKey: ["availableMatches"],
     queryFn: () => matchService.getAvailableMatches(),
+    enabled: !!isConnected,
     staleTime: STALE_TIME,
+    retry: 2,
+    refetchOnWindowFocus: false,
   });
 
   useEffect(() => {
@@ -21,8 +27,13 @@ export const useAvailableMatches = () => {
       }
     });
   }, [queryResult.data, addMatch, matches]);
-  return {
-    ...queryResult,
-    data: Object.values(matches),
-  };
+
+  return useMemo(
+    () => ({
+      ...queryResult,
+      isLoading: !isConnected || queryResult.isLoading,
+      data: Object.values(matches),
+    }),
+    [queryResult, matches]
+  );
 };

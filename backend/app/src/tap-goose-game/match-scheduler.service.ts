@@ -1,25 +1,38 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import uuid4 from 'uuid4';
 import { REDIS_EVENTS, REDIS_KEYS } from './config';
-import { TapGooseGamePubSubService } from './pub-sub.service';
+import { PubSubService } from '../pub-sub/pub-sub.service';
 import { ExternalCacheService } from 'src/external-cache/external-cache.service';
-import { validateDto } from './utils';
 import {
-  GameMatchDto,
-  CreateMatchDto,
-  UpdateGooseGameMatchPubSubEventDto,
-  UserJoinedOrLeftMatchPubSubEventDto,
+  GooseGameMatchDto,
+  CreateGooseMatchRequestDto,
+  UserJoinedGooseMatchPubSubEventDto,
+  UserLeaveGooseMatchPubSubEventDto,
+  StartedGooseGameMatchPubSubEventDto,
+  EndedGooseGameMatchPubSubEventDto,
 } from './dto';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { GameMatch, GameMatchCacheItem, MatchStatus } from './types';
+import {
+  ActiveMatchIsEnded,
+  GameMatch,
+  GameMatchCacheItem,
+  MatchPlayerInfo,
+  MatchStatus,
+} from './types';
 import { getServerId } from 'src/config/env.config';
+import { UsersService } from 'src/user/user.service';
+import { UserDto } from 'src/user/dto/user.dto';
+import { HelperService } from './helper.service';
+import { validateDto } from 'src/utils/validateDto';
 
 @Injectable()
 export class MatchSchedulerService {
   constructor(
     private readonly cacheService: ExternalCacheService,
-    private readonly pubSubService: TapGooseGamePubSubService,
+    private readonly pubSubService: PubSubService,
+    private usersService: UsersService,
     private readonly prisma: PrismaService,
+    private readonly helper: HelperService,
   ) {
     this.initLoadMatchesAndRunScheduler();
   }
@@ -29,6 +42,7 @@ export class MatchSchedulerService {
     const items = await this.cacheService.getManyByPattern<string>(
       REDIS_KEYS.getMatchKey('*'),
     );
+
     if (!items) return;
 
     const now = Date.now();
@@ -38,13 +52,17 @@ export class MatchSchedulerService {
 
       const match: GameMatchCacheItem = JSON.parse(item);
 
+      const matchStatus: MatchStatus | null = await this.cacheService.get(
+        REDIS_KEYS.getMatchStatusKey(match.id),
+      );
+
       if (match.serverId !== serverId) {
         continue;
       }
 
-      if (match.status === MatchStatus.WAITING) {
+      if (matchStatus === MatchStatus.WAITING) {
         const elapsedMs = now - match.createdTime;
-        const cooldownMs = match.cooldownMs * 1000;
+        const cooldownMs = match.cooldownMs;
         const remainingMs = Math.max(cooldownMs - elapsedMs, 0);
 
         const nextStepCallback = async () => {
@@ -52,9 +70,9 @@ export class MatchSchedulerService {
         };
 
         this.runNextStepAfterTime(remainingMs, nextStepCallback);
-      } else if (match.status === MatchStatus.ONGOING && match.startTime) {
+      } else if (matchStatus === MatchStatus.ONGOING && match.startTime) {
         const elapsedSinceStartMs = now - match.startTime;
-        const matchDurationMs = match.matchDurationSeconds * 60 * 1000;
+        const matchDurationMs = match.matchDurationSeconds * 1000;
         const remainingMs = Math.max(matchDurationMs - elapsedSinceStartMs, 0);
 
         const nextStepCallback = async () => {
@@ -69,27 +87,26 @@ export class MatchSchedulerService {
     timeoutMs: number,
     callback: () => void | Promise<void>,
   ) {
-    setTimeout(() => callback, timeoutMs);
+    setTimeout(() => callback(), timeoutMs);
   }
 
-  private async getMatch(matchId: string): Promise<GameMatchCacheItem> {
-    const data = await this.cacheService.get<string>(
-      REDIS_KEYS.getMatchKey(matchId),
-    );
-    if (!data) throw new Error('Match not found');
-    const match: GameMatchCacheItem = JSON.parse(data);
-    return match;
-  }
-
-  async createMatch(playerId: string, dto: CreateMatchDto): Promise<string> {
-    const id = uuid4();
+  async createMatch(
+    user: UserDto,
+    dto: CreateGooseMatchRequestDto,
+  ): Promise<string> {
+    const matchId = uuid4();
     const now = Date.now();
 
-    const match: GameMatchCacheItem = {
-      id,
+    const currentPlayerInfo: MatchPlayerInfo = {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      avatarUrl: user.avatarUrl,
+    };
+
+    const matchMetadata: GameMatchCacheItem = {
+      id: matchId,
       title: dto.title,
-      players: { [playerId]: 0 },
-      status: MatchStatus.WAITING,
       createdTime: now,
       cooldownMs: dto.cooldownMs,
       maxPlayers: dto.maxPlayers,
@@ -97,59 +114,67 @@ export class MatchSchedulerService {
       serverId: getServerId(),
     };
 
-    const dataForMatchDto: GameMatch = { ...match };
-    delete dataForMatchDto['serverId'];
-    console.log('~| dataForMatchDto', dataForMatchDto);
+    const scores = { [user.id]: 0 };
+    const players = { [user.id]: currentPlayerInfo };
+    const status = MatchStatus.WAITING;
 
-    const match_created_msg = await validateDto(GameMatchDto, dataForMatchDto);
+    const dataForMatchCreatedPubSubEvent: GameMatch = {
+      ...matchMetadata,
+      status,
+      scores,
+      players,
+    };
+    delete dataForMatchCreatedPubSubEvent['serverId'];
+    const match_created_msg = await validateDto(
+      GooseGameMatchDto,
+      dataForMatchCreatedPubSubEvent,
+    );
 
-    const user_joined_msg = await validateDto(
-      UserJoinedOrLeftMatchPubSubEventDto,
-      { playerId, matchId: id },
-    );
-    await this.pubSubService.publish(
-      REDIS_EVENTS.GOOSE_MATCH_USER_JOINED,
-      JSON.stringify(user_joined_msg),
-    );
+    await this.helper.clearMatchCache(matchId);
 
     await this.cacheService.set(
-      REDIS_KEYS.getMatchKey(id),
-      JSON.stringify(match),
+      REDIS_KEYS.getMatchKey(matchId),
+      JSON.stringify(matchMetadata),
     );
+    await this.cacheService.set(REDIS_KEYS.getMatchStatusKey(matchId), status);
 
     await this.pubSubService.publish(
       REDIS_EVENTS.GOOSE_MATCH_CREATED,
       JSON.stringify(match_created_msg),
     );
 
-    const timeoutMs = dto.cooldownMs * 1000;
+    await this.addPlayerToMatch(matchId, user.id);
+
+    const timeoutMs = dto.cooldownMs;
     const nextStepCallback = async () => {
-      await this.startMatch(id);
+      await this.startMatch(matchId);
     };
     this.runNextStepAfterTime(timeoutMs, nextStepCallback);
-    return match.id;
+    return matchMetadata.id;
   }
 
   private async startMatch(matchId: string): Promise<void> {
     const now = Date.now();
-    const match = await this.getMatch(matchId);
-    match.status = MatchStatus.ONGOING;
-    match.startTime = now;
-    const msg = await validateDto(UpdateGooseGameMatchPubSubEventDto, {
+    const matchMetaData = await this.helper.getMatchMetaDataFromCache(matchId);
+    await this.cacheService.set(
+      REDIS_KEYS.getMatchStatusKey(matchId),
+      MatchStatus.ONGOING,
+    );
+    matchMetaData.startTime = now;
+    const msg = await validateDto(StartedGooseGameMatchPubSubEventDto, {
       id: matchId,
-      status: match.status,
-      startTime: match.startTime,
+      startTime: matchMetaData.startTime,
     });
 
     const key = REDIS_KEYS.getMatchKey(matchId);
-    await this.cacheService.set(key, JSON.stringify(match));
+    await this.cacheService.set(key, JSON.stringify(matchMetaData));
 
     await this.pubSubService.publish(
-      REDIS_EVENTS.GOOSE_MATCH_STATE,
+      REDIS_EVENTS.GOOSE_MATCH_STARTED,
       JSON.stringify(msg),
     );
 
-    const timeoutMs = match.matchDurationSeconds * 60 * 1000;
+    const timeoutMs = matchMetaData.matchDurationSeconds * 1000;
     const nextStepCallback = async () => {
       await this.endMatch(matchId);
     };
@@ -158,34 +183,56 @@ export class MatchSchedulerService {
 
   private async endMatch(matchId: string): Promise<void> {
     const now = Date.now();
-    const match = await this.getMatch(matchId);
-    match.status = MatchStatus.FINISHED;
-    match.endTime = now;
-    const msg = await validateDto(UpdateGooseGameMatchPubSubEventDto, {
+    const matchStatus: MatchStatus | null = await this.cacheService.get(
+      REDIS_KEYS.getMatchStatusKey(matchId),
+    );
+    const matchMetaData = await this.helper.getMatchMetaDataFromCache(matchId);
+    if (matchStatus === MatchStatus.FINISHED) {
+      return;
+    }
+
+    await this.cacheService.set(
+      REDIS_KEYS.getMatchStatusKey(matchId),
+      MatchStatus.FINISHED,
+    );
+
+    matchMetaData.endTime = now;
+    const msg = await validateDto(EndedGooseGameMatchPubSubEventDto, {
       id: matchId,
-      status: match.status,
-      endTime: match.endTime,
+      endTime: matchMetaData.endTime,
     });
 
     const key = REDIS_KEYS.getMatchKey(matchId);
-    await this.cacheService.set(key, JSON.stringify(match));
+    await this.cacheService.set(key, JSON.stringify(matchMetaData));
 
     await this.pubSubService.publish(
-      REDIS_EVENTS.GOOSE_MATCH_STATE,
+      REDIS_EVENTS.GOOSE_MATCH_ENDED,
       JSON.stringify(msg),
     );
-    for (const playerId of Object.keys(match.players)) {
-      const msg = await validateDto(UserJoinedOrLeftMatchPubSubEventDto, {
+
+    const players = await this.helper.getMatchPlayersFromCache(matchId);
+    const scores = await this.helper.getMatchPlayersScoresFromCache(matchId);
+
+    for (const playerId of Object.keys(scores)) {
+      const msg = await validateDto(UserLeaveGooseMatchPubSubEventDto, {
         playerId,
-        matchId: match.id,
+        matchId,
       });
       await this.pubSubService.publish(
-        REDIS_EVENTS.GOOSE_MATCH_USER_LEFT,
+        REDIS_EVENTS.GOOSE_MATCH_USER_LEAVE,
         JSON.stringify(msg),
       );
     }
-    await this.cacheService.del(REDIS_KEYS.getMatchKey(match.id));
+
+    const match: GameMatch = {
+      ...matchMetaData,
+      scores,
+      players,
+      status: MatchStatus.FINISHED,
+    };
+    delete match['serverId'];
     await this.saveMatchResultsToDatabase(match);
+    await this.helper.clearMatchCache(matchId);
   }
 
   private saveMatchResultsToDatabase(match: GameMatch) {
@@ -203,7 +250,7 @@ export class MatchSchedulerService {
       },
     });
 
-    const playerRecords = Object.entries(match.players).map(
+    const playerRecords = Object.entries(match.scores).map(
       ([playerId, score]) =>
         this.prisma.userMatchScore.create({
           data: {
@@ -218,27 +265,32 @@ export class MatchSchedulerService {
   }
 
   async addPlayerToMatch(matchId: string, playerId: string): Promise<void> {
-    const match = await this.getMatch(matchId);
-    if (match.status === MatchStatus.ONGOING) {
-      throw new Error('Cannot join a match that has already started');
-    }
-    if (match.status === MatchStatus.FINISHED) {
-      throw new Error('Cannot join a match that has ended');
-    }
-    if (playerId in match.players) {
-      return;
-    }
-    if (Object.keys(match.players).length >= match.maxPlayers) {
-      throw new Error('Match is full');
-    }
-    match.players[playerId] = 0;
-    const msg = await validateDto(UserJoinedOrLeftMatchPubSubEventDto, {
-      playerId,
+    await this.helper.validateAddPlayerToMatch(matchId, playerId);
+
+    const user = await this.usersService.findById(playerId);
+    if (!user) throw new Error('User not found');
+
+    const matchPlayerInfo: MatchPlayerInfo = {
+      id: playerId,
+      username: user.username,
+      email: user.email,
+      avatarUrl: user.avatarUrl,
+    };
+
+    const msg = await validateDto(UserJoinedGooseMatchPubSubEventDto, {
+      matchPlayerInfo,
       matchId,
     });
 
-    const key = REDIS_KEYS.getMatchKey(matchId);
-    await this.cacheService.set(key, JSON.stringify(match));
+    await this.cacheService.hset(REDIS_KEYS.getMatchPlayersKey(matchId), {
+      [playerId]: JSON.stringify(matchPlayerInfo),
+    });
+    await this.cacheService.hset(REDIS_KEYS.getMatchScoresKey(matchId), {
+      [playerId]: '0',
+    });
+    await this.cacheService.hset(REDIS_KEYS.getMatchTapsKey(matchId), {
+      [playerId]: '0',
+    });
 
     await this.pubSubService.publish(
       REDIS_EVENTS.GOOSE_MATCH_USER_JOINED,
@@ -250,41 +302,28 @@ export class MatchSchedulerService {
     matchId: string,
     playerId: string,
   ): Promise<void> {
-    const match = await this.getMatch(matchId);
-    if (!(playerId in match.players)) return;
-    delete match.players[playerId];
-    const msg = await validateDto(UserJoinedOrLeftMatchPubSubEventDto, {
+    const isPlayerInMatch = await this.helper.isPlayerInMatchCache(
+      matchId,
+      playerId,
+    );
+
+    if (!isPlayerInMatch) throw new Error('Player is not in the match');
+
+    const msg = await validateDto(UserLeaveGooseMatchPubSubEventDto, {
       playerId,
       matchId,
     });
 
-    const key = REDIS_KEYS.getMatchKey(matchId);
-    await this.cacheService.set(key, JSON.stringify(match));
+    await this.helper.clearMatchPlayerCache(matchId, playerId);
 
     await this.pubSubService.publish(
-      REDIS_EVENTS.GOOSE_MATCH_USER_LEFT,
+      REDIS_EVENTS.GOOSE_MATCH_USER_LEAVE,
       JSON.stringify(msg),
     );
-    if (Object.keys(match.players).length === 0) {
+
+    const isMatchEmpty = await this.helper.isMatchEmpty(matchId);
+    if (isMatchEmpty) {
       await this.endMatch(matchId);
     }
-  }
-
-  async getAvailableMatches(): Promise<GameMatch[]> {
-    const items = await this.cacheService.getManyByPattern<string>(
-      REDIS_KEYS.getMatchKey('*'),
-    );
-    const matches: GameMatch[] = [];
-    for (const item of items || []) {
-      if (item) {
-        const match: GameMatchCacheItem = JSON.parse(item);
-        if (match.status === MatchStatus.WAITING) {
-          const gameMatch: GameMatch = { ...match };
-          delete gameMatch['serverId'];
-          matches.push(gameMatch);
-        }
-      }
-    }
-    return matches;
   }
 }

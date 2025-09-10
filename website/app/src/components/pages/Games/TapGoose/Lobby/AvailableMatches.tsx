@@ -1,12 +1,21 @@
 import { useAvailableMatches } from "@/src/hooks/games/tapGoose/useAvailableMatches";
-import type { GameMatch, JoinToMatchPayload, NewMatchPayload } from "@/src/API/types/match.types";
+import {
+  type GameMatch,
+  type JoinToMatchPayload,
+  type CreateMatchPayload,
+  MatchStatus,
+} from "@/src/API/types/match.types";
 import { matchService } from "@/src/services/matchService";
 import { useUserStore } from "@/src/store/userStore";
 import { Navigate, useNavigate } from "@tanstack/react-router";
 import { Button, ButtonWithOpacity } from "@/src/components/Goose-UI/Forms/Button";
 import { UserNotificationService } from "@/src/services/userNotificationService";
 import { UserRoleEnum } from "@/src/store/types";
-import { getTapGooseMatchPath } from "@/src/router/pathes";
+import { loginPath, tapGooseMatchPath } from "@/src/router/paths";
+import { useMemo, useState } from "react";
+import { useTimeToStartLeft } from "@/src/hooks/games/tapGoose/useTimeToStartLeft";
+import Modal from "@/src/components/Goose-UI/Modal";
+import { CreateMatchForm } from "./CreateMatchForm";
 
 type MatchItemProps = {
   match: GameMatch;
@@ -16,13 +25,31 @@ type MatchItemProps = {
 
 const MatchItem: React.FC<MatchItemProps> = (props) => {
   const { match, handleJoinToMatch, handleReturnToMatch } = props;
-  const user = useUserStore((state) => state.user);
+  const user = useUserStore((state) => state.user!);
 
-  const isUserInThisMatch = user?.id ? Object.keys(match.players).includes(user.id) : false;
+  const isUserInThisMatch = useMemo(() => {
+    if (!user) return false;
+    return Object.values(match.players).some((player) => player.id === user.id);
+  }, [match.players, user]);
+
+  const timeLeft = useTimeToStartLeft(match);
 
   return (
     <li key={match.id} className="p-3 border border-gray-700 rounded hover:shadow cursor-pointer">
-      <p className="font-semibold text-white">{match.title || "Матч"}</p>
+      <div className="flex justify-start items-center gap-3">
+        <p className="font-semibold text-white">{match.title || "Матч"}</p>
+        {match.status && (
+          <span
+            className={`text-xs px-2 py-1 rounded-full ${
+              match.status === MatchStatus.WAITING ? "bg-yellow-500 text-black" : "bg-green-500 text-white"
+            }`}
+          >
+            {match.status === MatchStatus.WAITING
+              ? `Ожидание ${timeLeft !== null ? timeLeft + "s" : ""}`
+              : "В процессе"}
+          </span>
+        )}
+      </div>
       <div className="flex justify-between items-center">
         {match.status && (
           <p className="text-sm text-gray-300">
@@ -59,15 +86,8 @@ export const AvailableMatches: React.FC = () => {
 
   const { data: availableMatches, isLoading: loadingAvailable, isError: errorAvailable } = useAvailableMatches();
 
-  const handleCreateMatch = async () => {
-    const payload: NewMatchPayload = {};
-    try {
-      const matchId = await matchService.createMatchWS(payload);
-      navigate({ to: getTapGooseMatchPath(matchId), replace: true });
-    } catch (error) {
-      UserNotificationService.showError(`Ошибка при создании матча: ${(error as Error).message}`);
-    }
-  };
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const isAdmin = !!user?.roles.includes(UserRoleEnum.ADMIN);
 
   const handleJoinToMatch = async (matchId: string) => {
     const payload: JoinToMatchPayload = {
@@ -75,20 +95,24 @@ export const AvailableMatches: React.FC = () => {
     };
     try {
       await matchService.joinToMatchWS(payload);
+      navigate({ to: tapGooseMatchPath, params: { matchId } });
     } catch (error) {
       UserNotificationService.showError(`Ошибка при присоединении к матчу: ${(error as Error).message}`);
     }
   };
 
   const handleReturnToMatch = async (matchId: string) => {
-    navigate({ to: getTapGooseMatchPath(matchId), replace: true });
+    navigate({ to: tapGooseMatchPath, params: { matchId } });
+  };
+
+  const handleMatchCreated = (matchId: string) => {
+    setIsModalOpen(false);
+    navigate({ to: tapGooseMatchPath, params: { matchId } });
   };
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to={loginPath} replace />;
   }
-
-  const isAdmin = user.roles.includes(UserRoleEnum.ADMIN);
 
   return (
     <>
@@ -96,7 +120,7 @@ export const AvailableMatches: React.FC = () => {
         <h2 className="text-xl font-bold text-white ">Доступные матчи</h2>
         {isAdmin && (
           <Button
-            onClick={handleCreateMatch}
+            onClick={() => setIsModalOpen(true)}
             className="text-sm px-4 py-2 bg-blue-600 text-white rounded shadow hover:bg-blue-700 transition"
           >
             Создать матч
@@ -116,6 +140,10 @@ export const AvailableMatches: React.FC = () => {
           />
         ))}
       </ul>
+
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+        <CreateMatchForm onClose={() => setIsModalOpen(false)} onCreated={handleMatchCreated} />
+      </Modal>
     </>
   );
 };

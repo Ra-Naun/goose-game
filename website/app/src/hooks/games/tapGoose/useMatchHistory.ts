@@ -2,12 +2,14 @@ import { useQuery } from "@tanstack/react-query";
 import { matchService } from "@/src/services/matchService";
 import { STALE_TIME } from "@/src/config/tanQuery";
 
-export const useMatchesHistory = (userId?: string) => {
+export const useMatchesHistory = (userId: string) => {
   return useQuery({
     queryKey: ["matchesHistory", userId],
-    queryFn: () => matchService.getUserMatchesHistory(userId!),
+    queryFn: () => matchService.getUserMatchesHistory(userId),
     enabled: !!userId,
     staleTime: STALE_TIME,
+    retry: 2,
+    refetchOnWindowFocus: false,
   });
 };
 
@@ -17,5 +19,7 @@ export const useMatchHistory = (matchId: string) => {
     queryFn: () => matchService.getUserMatchHistory(matchId),
     enabled: !!matchId,
     staleTime: STALE_TIME,
+    retry: 2,
+    refetchOnWindowFocus: false,
   });
 };

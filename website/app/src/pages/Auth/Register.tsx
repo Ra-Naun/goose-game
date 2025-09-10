@@ -8,7 +8,7 @@ import { UserNotificationService } from "@/src/services/userNotificationService"
 import { userService } from "@/src/services/userService";
 import { ApiError } from "@/src/API/helpers/errors";
 import { Link } from "@/src/components/Goose-UI/Link";
-import { getStartPagePath } from "@/src/router/pathes";
+import { getStartPagePath } from "@/src/router/paths";
 
 export const Register: React.FC = () => {
   const [email, setEmail] = useState("");
@@ -66,7 +66,7 @@ export const Register: React.FC = () => {
               />
 
               <Input
-                type="email"
+                type="text"
                 label="Username"
                 autoComplete="username"
                 size="lg"

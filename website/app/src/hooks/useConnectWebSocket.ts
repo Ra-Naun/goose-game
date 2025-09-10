@@ -1,9 +1,9 @@
 import { useEffect } from "react";
-import { wsClient } from "@/src/API/client/wsClient";
 import { useWebSocketStore } from "@/src/store/webSocketStore";
+import type { WebsocketClient } from "@/src/client/websocketClient";
 
-export function useConnectWebSocket() {
-  const isConnected = useWebSocketStore((state) => state.connected);
+export function useConnectWebSocket(wsClient: WebsocketClient) {
+  const isConnected = useWebSocketStore((state) => state.connectedStatuses[wsClient.id]);
 
   useEffect(() => {
     if (!isConnected) {

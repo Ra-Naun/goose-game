@@ -8,14 +8,22 @@ import { getUserRoleOnCreate as getUserRolesOnCreate } from './utils';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { REDIS_KEYS } from 'src/tap-goose-game/config';
 import { ExternalCacheService } from 'src/external-cache/external-cache.service';
-import { UserInfoDto } from 'src/tap-goose-game/dto';
-import { validateDto } from 'src/tap-goose-game/utils';
+import {
+  REDIS_EVENTS,
+  USER_ONLINE_EXPIRATION,
+  USER_ONLINE_KEY_REGEX,
+} from './config';
+import { PubSubService } from 'src/pub-sub/pub-sub.service';
+import { OnlineUserInfoDto } from './dto/online-user.info.dto';
+import { OnlineUserChangedPubSubEventDto } from './dto/online-user-changed-pub-sub-event.dto';
+import { validateDto } from 'src/utils/validateDto';
 
 @Injectable()
 export class UsersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly cacheService: ExternalCacheService,
+    private readonly pubSubService: PubSubService,
   ) { }
 
   async findByEmail(email: User['email']): Promise<UserDto | null> {
@@ -27,7 +35,7 @@ export class UsersService {
       return null;
     }
 
-    const userDto = UserDto.fromDatabaseItem(item);
+    const userDto = await UserDto.fromDatabaseItem(item);
     return userDto;
   }
 
@@ -40,7 +48,7 @@ export class UsersService {
       return null;
     }
 
-    const userDto = UserDto.fromDatabaseItem(item);
+    const userDto = await UserDto.fromDatabaseItem(item);
     return userDto;
   }
 
@@ -60,7 +68,7 @@ export class UsersService {
       data: { username, email, roles, hashedPassword },
     });
 
-    return UserDto.fromDatabaseItem(item);
+    return await UserDto.fromDatabaseItem(item);
   }
 
   async update(id: User['id'], dto: UpdateUserDto): Promise<UserDto> {
@@ -76,7 +84,7 @@ export class UsersService {
       data: updateData,
     });
 
-    const userDto = UserDto.fromDatabaseItem(item);
+    const userDto = await UserDto.fromDatabaseItem(item);
     return userDto;
   }
 
@@ -84,25 +92,29 @@ export class UsersService {
     const keys = await this.cacheService.getKeysByPattern(
       REDIS_KEYS.getUserOnlineKey('*'),
     );
-    const onlineUsers: UserInfoDto[] = [];
+    const onlineUsers: OnlineUserInfoDto[] = [];
     for (const key of keys || []) {
       const isOnline = await this.cacheService.get<boolean>(key);
       if (isOnline) {
-        const match = key.match(/^goose:user:(.*):online$/);
+        const match = key.match(USER_ONLINE_KEY_REGEX);
         if (match && match[1]) {
           const userId = match[1];
           const user = await this.findById(userId);
           if (!user) {
             continue;
           }
-          const userInfo: UserInfoDto = {
+          const userInfo: OnlineUserInfoDto = {
             id: user.id,
             email: user.email,
             username: user.username,
+            avatarUrl: user.avatarUrl,
             roles: user.roles,
             isOnline: true,
           };
-          const userInfoValidated = await validateDto(UserInfoDto, userInfo);
+          const userInfoValidated = await validateDto(
+            OnlineUserInfoDto,
+            userInfo,
+          );
 
           onlineUsers.push(userInfoValidated);
         }
@@ -110,5 +122,40 @@ export class UsersService {
     }
 
     return onlineUsers;
+  }
+
+  async IMOnline(playerId: string): Promise<void> {
+    const key = REDIS_KEYS.getUserOnlineKey(playerId);
+
+    const isOnline = await this.cacheService.get<boolean>(key);
+    await this.cacheService.set(key, true, USER_ONLINE_EXPIRATION);
+
+    setTimeout(
+      async () => {
+        const isOnline = await this.cacheService.get<boolean>(key);
+        if (!isOnline) {
+          const msg = await validateDto(OnlineUserChangedPubSubEventDto, {
+            playerId,
+            isOnline: false,
+          });
+          await this.pubSubService.publish(
+            REDIS_EVENTS.ONLINE_USERS_CHANGED,
+            JSON.stringify([msg]),
+          );
+        }
+      },
+      (USER_ONLINE_EXPIRATION + 10) * 1000,
+    ); // +10 seconds buffer
+
+    if (isOnline) return; // already online, no need to notify
+
+    const msg = await validateDto(OnlineUserChangedPubSubEventDto, {
+      playerId,
+      isOnline: true,
+    });
+    await this.pubSubService.publish(
+      REDIS_EVENTS.ONLINE_USERS_CHANGED,
+      JSON.stringify([msg]),
+    );
   }
 }

@@ -4,10 +4,17 @@ export enum MatchStatus {
   FINISHED = 'FINISHED',
 }
 
+export type MatchPlayers = { [playerId: string]: MatchPlayerInfo };
+export type PlayerScores = { [playerId: string]: number };
+
+export type SerializedMatchPlayers = { [playerId: string]: string };
+export type SerializedPlayerScore = { [playerId: string]: string };
+
 export interface GameMatch {
   id: string;
   title: string;
-  players: Record<string, number>;
+  players: MatchPlayers;
+  scores: PlayerScores;
   status: MatchStatus;
   maxPlayers: number;
   cooldownMs: number;
@@ -17,21 +24,27 @@ export interface GameMatch {
   endTime?: number; // timestamp окончания раунда
 }
 
-export interface GameMatchCacheItem extends GameMatch {
+export type ActiveMatchIsEnded = {
+  status: MatchStatus.FINISHED;
+};
+export interface GameMatchCacheItem
+  extends Omit<GameMatch, 'scores' | 'players' | 'status'> {
   serverId: string;
 }
 
-export type UserMatchScore = {
-  playerId: string;
+export type MatchPlayerInfo = {
+  id: string;
   username: string;
-  score: number;
+  email: string;
+  avatarUrl: string;
 };
 
 export interface HistoryOfGameMatch {
   id: string;
   title: string;
-  players: Array<UserMatchScore>;
   status: MatchStatus;
+  players: MatchPlayers;
+  scores: PlayerScores;
   maxPlayers: number;
   cooldownMs: number;
   matchDurationSeconds: number;

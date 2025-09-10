@@ -1,8 +1,9 @@
 import { authAPI } from "@/src/API/routes/auth";
 import { userAPI } from "@/src/API/routes/user";
-import type { User, UserInfo } from "@/src/store/types";
+import type { User, OnlineUserInfo } from "@/src/store/types";
 import { authTokenService } from "./authTokenService";
 import { parseServerUserInfoToClientUserInfo, parseServerUserToClientUser } from "./utils";
+import { useUserStore } from "@/src/store/userStore";
 
 /**
  * Сервис для бизнес-логики пользователя: логин, регистрация, получение профиля, логаут.
@@ -50,7 +51,7 @@ export const userService = {
    * Получить пользователей онлайн.
    * @returns {Promise<User>}
    */
-  async getOnlineUsers(): Promise<Array<UserInfo>> {
+  async getOnlineUsers(): Promise<Array<OnlineUserInfo>> {
     const usersInfo = await userAPI.getOnlineUsers();
     const parsedUsersInfo = usersInfo.map((item) => parseServerUserInfoToClientUserInfo(item));
     return parsedUsersInfo;
@@ -61,6 +62,7 @@ export const userService = {
    */
   async logout(): Promise<void> {
     await authAPI.logout();
+    useUserStore.getState().setUser(null);
     authTokenService.remove();
   },
 

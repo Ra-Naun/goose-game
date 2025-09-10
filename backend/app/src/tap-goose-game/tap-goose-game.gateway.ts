@@ -8,7 +8,7 @@ import {
   OnGatewayDisconnect,
   WebSocketServer,
 } from '@nestjs/websockets';
-import { Socket, Server } from 'socket.io';
+import { Server } from 'socket.io';
 import { TapGooseGameService } from './tap-goose-game.service';
 import {
   REDIS_EVENTS,
@@ -19,19 +19,17 @@ import {
 
 import { AsyncApiPub, AsyncApiSub } from 'nestjs-asyncapi';
 import {
-  GameMatchDto,
-  CreateMatchDto,
-  TapErrorDto,
-  TapGooseDto,
-  TapSuccessDto,
-  UpdateGooseGameMatchPubSubEventDto,
+  GooseGameMatchDto,
+  CreateGooseMatchRequestDto,
+  TapGooseRequestDto,
   UserGooseTapPubSubEventDto,
-  UserJoinedOrLeftMatchPubSubEventDto,
-  UserJoinOrLeftMatchDto,
-  UserOnlineChangedPubSubEventDto,
-  UserInfoDto,
+  UserJoinOrLeaveGooseMatchRequestDto,
+  UserJoinedGooseMatchPubSubEventDto,
+  UserLeaveGooseMatchPubSubEventDto,
+  StartedGooseGameMatchPubSubEventDto,
+  EndedGooseGameMatchPubSubEventDto,
 } from './dto';
-import { TapGooseGamePubSubService } from './pub-sub.service';
+import { PubSubService } from '../pub-sub/pub-sub.service';
 import { UseGuards } from '@nestjs/common';
 import { UsersService } from 'src/user/user.service';
 import { JwtService } from '@nestjs/jwt';
@@ -39,36 +37,15 @@ import { Roles } from 'src/auth/decorators/roles.decorator';
 import { UserRoleEnum } from 'src/user/dto/types';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import type { JwtSocket } from 'src/types/socket-user';
+import { UsersSockets } from 'src/utils/UsersSockets';
+
+import { authMiddleware } from '../auth/websocketsMiddlewares/auth.middleware';
 import {
   getStatusErrorResponse,
   getStatusOkResponse,
-  validateDto,
-} from './utils';
-import { authMiddleware } from '../auth/websocketsMiddlewares/auth.middleware';
-
-class UsersSockets {
-  usersSockets: Map<string, Set<Socket>> = new Map(); // playerId -> Set<Socket>
-
-  getUserSockets(playerId: string): Set<Socket> {
-    if (!this.usersSockets.has(playerId)) {
-      this.usersSockets.set(playerId, new Set());
-    }
-    return this.usersSockets.get(playerId)!;
-  }
-
-  registerUserSocket(playerId: string, socket: Socket) {
-    const userSockets = this.getUserSockets(playerId);
-    userSockets.add(socket);
-  }
-
-  unregisterUserSocket(playerId: string, socket: Socket) {
-    const userSockets = this.getUserSockets(playerId);
-    userSockets.delete(socket);
-    if (userSockets.size === 0) {
-      this.usersSockets.delete(playerId);
-    }
-  }
-}
+} from 'src/utils/generateResponeWithStatus';
+import { validateDto } from 'src/utils/validateDto';
+import { HelperService } from './helper.service';
 
 @WebSocketGateway({
   path: '/tap-goose-game/socket.io',
@@ -84,9 +61,10 @@ export class TapGooseGameGateway
 
   constructor(
     private readonly gameService: TapGooseGameService,
-    private readonly pubSubService: TapGooseGamePubSubService,
+    private readonly pubSubService: PubSubService,
     private usersService: UsersService,
     private jwtService: JwtService,
+    private readonly helper: HelperService,
   ) { }
 
   async afterInit() {
@@ -95,12 +73,12 @@ export class TapGooseGameGateway
 
     // Подписка на Pub/Sub для синхронизации событий между инстансами
     const subscribeChannels = [
-      REDIS_EVENTS.GOOSE_MATCH_STATE,
-      REDIS_EVENTS.GOOSE_MATCH_TAP,
       REDIS_EVENTS.GOOSE_MATCH_CREATED,
+      REDIS_EVENTS.GOOSE_MATCH_STARTED,
+      REDIS_EVENTS.GOOSE_MATCH_ENDED,
+      REDIS_EVENTS.GOOSE_MATCH_TAP,
       REDIS_EVENTS.GOOSE_MATCH_USER_JOINED,
-      REDIS_EVENTS.GOOSE_MATCH_USER_LEFT,
-      REDIS_EVENTS.ONLINE_USERS_CHANGED,
+      REDIS_EVENTS.GOOSE_MATCH_USER_LEAVE,
     ] as const;
 
     type SubscribeChannel = (typeof subscribeChannels)[number];
@@ -111,18 +89,32 @@ export class TapGooseGameGateway
         try {
           const parsedMessage = JSON.parse(message);
           switch (channel) {
-            case REDIS_EVENTS.GOOSE_MATCH_STATE: {
+            case REDIS_EVENTS.GOOSE_MATCH_STARTED: {
               try {
                 const msg = await validateDto(
-                  UpdateGooseGameMatchPubSubEventDto,
+                  StartedGooseGameMatchPubSubEventDto,
                   parsedMessage,
                 );
-                this.server.emit(WEBSOCKET_CHANEL_SEND.MATCH_STATE_UPDATE, msg);
+                this.server.emit(WEBSOCKET_CHANEL_SEND.MATCH_STARTED, msg);
               } catch (error) {
                 console.error(error.message);
               }
               break;
             }
+
+            case REDIS_EVENTS.GOOSE_MATCH_ENDED: {
+              try {
+                const msg = await validateDto(
+                  EndedGooseGameMatchPubSubEventDto,
+                  parsedMessage,
+                );
+                this.server.emit(WEBSOCKET_CHANEL_SEND.MATCH_ENDED, msg);
+              } catch (error) {
+                console.error(error.message);
+              }
+              break;
+            }
+
             case REDIS_EVENTS.GOOSE_MATCH_TAP: {
               try {
                 const msg = await validateDto(
@@ -142,7 +134,7 @@ export class TapGooseGameGateway
             }
             case REDIS_EVENTS.GOOSE_MATCH_CREATED: {
               try {
-                const msg = await validateDto(GameMatchDto, parsedMessage);
+                const msg = await validateDto(GooseGameMatchDto, parsedMessage);
                 this.server.emit(WEBSOCKET_CHANEL_SEND.MATCH_CREATED, msg);
               } catch (error) {
                 console.error(error.message);
@@ -152,30 +144,30 @@ export class TapGooseGameGateway
             case REDIS_EVENTS.GOOSE_MATCH_USER_JOINED: {
               try {
                 const msg = await validateDto(
-                  UserJoinedOrLeftMatchPubSubEventDto,
+                  UserJoinedGooseMatchPubSubEventDto,
                   parsedMessage,
                 );
 
-                const { playerId, matchId } = msg;
-                const userSockets = this.usersSockets.getUserSockets(playerId);
+                const {
+                  matchPlayerInfo: { id },
+                  matchId,
+                } = msg;
+                const userSockets = this.usersSockets.getUserSockets(id);
                 const roomKey = WEBSOCKET_ROOM.getMatchRoomKey(matchId);
                 for (const socket of userSockets) {
                   await socket.join(roomKey);
                 }
-                this.server.emit(
-                  WEBSOCKET_CHANEL_SEND.MATCH_USER_JOIN_SUCCESS,
-                  msg,
-                );
+                this.server.emit(WEBSOCKET_CHANEL_SEND.USER_JOINED, msg);
               } catch (error) {
                 console.error(error.message);
               }
               break;
             }
 
-            case REDIS_EVENTS.GOOSE_MATCH_USER_LEFT: {
+            case REDIS_EVENTS.GOOSE_MATCH_USER_LEAVE: {
               try {
                 const msg = await validateDto(
-                  UserJoinedOrLeftMatchPubSubEventDto,
+                  UserLeaveGooseMatchPubSubEventDto,
                   parsedMessage,
                 );
 
@@ -185,50 +177,7 @@ export class TapGooseGameGateway
                 for (const socket of userSockets) {
                   await socket.leave(roomKey);
                 }
-                this.server.emit(
-                  WEBSOCKET_CHANEL_SEND.MATCH_USER_LEFT_SUCCESS,
-                  msg,
-                );
-              } catch (error) {
-                console.error(error.message);
-              }
-              break;
-            }
-
-            case REDIS_EVENTS.ONLINE_USERS_CHANGED: {
-              try {
-                const userStatusesPromises = (
-                  parsedMessage as UserOnlineChangedPubSubEventDto[]
-                ).map(async (userStatus) => {
-                  const userStatusValidated = await validateDto(
-                    UserOnlineChangedPubSubEventDto,
-                    userStatus,
-                  );
-
-                  const user = (await this.usersService.findById(
-                    userStatusValidated.playerId,
-                  ))!;
-
-                  const userInfo: UserInfoDto = {
-                    id: user.id,
-                    email: user.email,
-                    username: user.username,
-                    roles: user.roles,
-                    isOnline: userStatusValidated.isOnline,
-                  };
-
-                  const userInfoValidated = await validateDto(
-                    UserInfoDto,
-                    userInfo,
-                  );
-
-                  return userInfoValidated;
-                });
-                const userStatuses = await Promise.all(userStatusesPromises);
-                this.server.emit(
-                  WEBSOCKET_CHANEL_SEND.ONLINE_USERS_CHANGED,
-                  userStatuses,
-                );
+                this.server.emit(WEBSOCKET_CHANEL_SEND.USER_LEAVE, msg);
               } catch (error) {
                 console.error(error.message);
               }
@@ -245,12 +194,21 @@ export class TapGooseGameGateway
     );
   }
 
-  handleConnection(client: JwtSocket) {
+  async handleConnection(client: JwtSocket) {
     const playerId = client.user.id;
     if (!playerId || typeof playerId !== 'string') {
       client.disconnect(true);
       return;
     }
+
+    // присоединяемся к комнатам для событий из активных игр:
+    const userMatchesIds =
+      await this.helper.getPlayerMatchesIdsFromCache(playerId);
+    const promises = [...userMatchesIds].map(async (matchId) => {
+      const roomKey = WEBSOCKET_ROOM.getMatchRoomKey(matchId);
+      await client.join(roomKey);
+    });
+    await Promise.all(promises);
     this.usersSockets.registerUserSocket(playerId, client);
     console.log(`Client connected: ${client.id} ${playerId}`);
   }
@@ -265,34 +223,44 @@ export class TapGooseGameGateway
 
   @AsyncApiSub({
     channel: WEBSOCKET_CHANEL_LISTEN.CREATE_MATCH,
-    message: { payload: CreateMatchDto },
+    message: { payload: CreateGooseMatchRequestDto },
     summary: 'Client requests to create a new match',
   })
   @AsyncApiPub({
     channel: WEBSOCKET_CHANEL_SEND.MATCH_CREATED,
-    message: { payload: GameMatchDto },
+    message: { payload: GooseGameMatchDto },
     summary: 'Response when a match is created',
   })
   @Roles(UserRoleEnum.ADMIN)
   @UseGuards(RolesGuard)
   @SubscribeMessage(WEBSOCKET_CHANEL_LISTEN.CREATE_MATCH)
   async handleCreateMatch(
-    @MessageBody() dto: CreateMatchDto,
+    @MessageBody() dto: CreateGooseMatchRequestDto,
     @ConnectedSocket() client: JwtSocket,
   ) {
     try {
-      const matchId = await this.gameService.createMatch(client.user.id, dto);
+      const matchId = await this.gameService.createMatch(client.user, dto);
       return getStatusOkResponse({
         matchId,
       });
     } catch (err) {
-      return getStatusOkResponse(err.message);
+      return getStatusErrorResponse(err.message);
     }
   }
 
+  @AsyncApiSub({
+    channel: WEBSOCKET_CHANEL_LISTEN.MATCH_USER_JOIN,
+    message: { payload: UserJoinOrLeaveGooseMatchRequestDto },
+    summary: 'Client requests to join a match',
+  })
+  @AsyncApiPub({
+    channel: WEBSOCKET_CHANEL_SEND.USER_JOINED,
+    message: { payload: UserJoinedGooseMatchPubSubEventDto },
+    summary: 'Response when a user successfully joins a match',
+  })
   @SubscribeMessage(WEBSOCKET_CHANEL_LISTEN.MATCH_USER_JOIN)
   async handleUserJoinToMatch(
-    @MessageBody() dto: UserJoinOrLeftMatchDto,
+    @MessageBody() dto: UserJoinOrLeaveGooseMatchRequestDto,
     @ConnectedSocket() client: JwtSocket,
   ) {
     try {
@@ -303,9 +271,19 @@ export class TapGooseGameGateway
     }
   }
 
-  @SubscribeMessage(WEBSOCKET_CHANEL_LISTEN.MATCH_USER_LEFT)
-  async handleUserLeftFromMatch(
-    @MessageBody() dto: UserJoinOrLeftMatchDto,
+  @AsyncApiSub({
+    channel: WEBSOCKET_CHANEL_LISTEN.MATCH_USER_LEAVE,
+    message: { payload: UserJoinOrLeaveGooseMatchRequestDto },
+    summary: 'Client requests to leave a match',
+  })
+  @AsyncApiPub({
+    channel: WEBSOCKET_CHANEL_SEND.USER_LEAVE,
+    message: { payload: UserLeaveGooseMatchPubSubEventDto },
+    summary: 'Response when a user successfully leaves a match',
+  })
+  @SubscribeMessage(WEBSOCKET_CHANEL_LISTEN.MATCH_USER_LEAVE)
+  async handleUserLeaveFromMatch(
+    @MessageBody() dto: UserJoinOrLeaveGooseMatchRequestDto,
     @ConnectedSocket() client: JwtSocket,
   ) {
     try {
@@ -318,60 +296,23 @@ export class TapGooseGameGateway
 
   @AsyncApiSub({
     channel: WEBSOCKET_CHANEL_LISTEN.GOOSE_TAP,
-    message: { payload: TapGooseDto },
-    summary: 'Client sends a tap event on goose',
+    message: { payload: TapGooseRequestDto },
+    summary: 'Client requests to tap the goose (score points)',
   })
   @AsyncApiPub({
     channel: WEBSOCKET_CHANEL_SEND.GOOSE_TAP_SUCCESS,
-    message: { payload: TapSuccessDto },
-    summary: 'Response when clicking on the goose successfully',
-  })
-  @AsyncApiPub({
-    channel: WEBSOCKET_CHANEL_SEND.GOOSE_TAP_ERROR,
-    message: { payload: TapErrorDto },
-    summary: 'Response when clicking on a goose error',
+    message: { payload: UserGooseTapPubSubEventDto },
+    summary: 'Response when a tap is successful',
   })
   @SubscribeMessage(WEBSOCKET_CHANEL_LISTEN.GOOSE_TAP)
   async handleTapGoose(
-    @MessageBody() data: TapGooseDto,
+    @MessageBody() data: TapGooseRequestDto,
     @ConnectedSocket() client: JwtSocket,
   ) {
     try {
-      await this.gameService.tapGoose(
-        data.matchId,
-        client.user.id,
-        data.tapCount,
-      );
+      await this.gameService.tapGoose(data.matchId, client.user);
       return getStatusOkResponse();
     } catch (err) {
-      return getStatusErrorResponse(err.message);
-    }
-  }
-
-  @AsyncApiSub({
-    channel: WEBSOCKET_CHANEL_LISTEN.GOOSE_TAP,
-    message: { payload: TapGooseDto },
-    summary: 'Client sends a tap event on goose',
-  })
-  @AsyncApiPub({
-    channel: WEBSOCKET_CHANEL_SEND.GOOSE_TAP_SUCCESS,
-    message: { payload: TapSuccessDto },
-    summary: 'Response when clicking on the goose successfully',
-  })
-  @AsyncApiPub({
-    channel: WEBSOCKET_CHANEL_SEND.GOOSE_TAP_ERROR,
-    message: { payload: TapErrorDto },
-    summary: 'Response when clicking on a goose error',
-  })
-  @SubscribeMessage(WEBSOCKET_CHANEL_LISTEN.ONLINE_USER)
-  async handleIMOnline(@ConnectedSocket() client: JwtSocket) {
-    try {
-      await this.gameService.IMOnline(client.user.id);
-      return getStatusOkResponse();
-    } catch (err) {
-      client.emit(WEBSOCKET_CHANEL_SEND.ONLINE_USER_ERROR, {
-        message: err.message,
-      });
       return getStatusErrorResponse(err.message);
     }
   }

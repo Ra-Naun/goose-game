@@ -8,8 +8,6 @@ import { SelectFile } from "@/src/components/Goose-UI/Forms/Input";
 import type { User } from "@/src/store/types";
 import { CircleArrow } from "@/src/components/Goose-UI/Icons/CircleArrow";
 
-export const DEFAULT_AVATAR_URL = "/default-avatar.svg";
-
 type AvatarImageProps = {
   user: User;
   isModalOpen: boolean;
@@ -29,7 +27,7 @@ const AvatarImage: React.FC<AvatarImageProps> = (props) => {
         className="relative flex items-center justify-center w-20 h-20 rounded-full focus:outline-none cursor-pointer group"
       >
         <img
-          src={user.avatarUrl || DEFAULT_AVATAR_URL}
+          src={user.avatarUrl}
           alt={getUserInitials(user.username)}
           className="rounded-full bg-gray-700 w-20 h-20 object-cover transition duration-300 group-hover:brightness-75"
         />
@@ -49,7 +47,7 @@ const AvatarImage: React.FC<AvatarImageProps> = (props) => {
 };
 
 export const Profile: React.FC = () => {
-  const user = useUserStore((state) => state.user);
+  const user = useUserStore((state) => state.user!);
   const [isModalOpen, setModalOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
@@ -84,14 +82,10 @@ export const Profile: React.FC = () => {
     }
   };
 
-  if (!user) {
-    return <div className="text-white p-6">Пользователь не найден</div>;
-  }
-
   return (
-    <div className="h-screen w-full flex pt-6 pb-6 gap-6 flex-col justify-between sm:flex-row ml-3 mr-3 sm:m-0">
-      <main className="flex flex-col gap-6 w-1/4 min-w-[250px]">
-        <WidgetPanel className="flex-2">
+    <div className="min-h-screen w-full flex flex-col sm:flex-row gap-6 pt-3 pb-3 sm:pt-6 sm:pb-6 sm:justify-between overflow-x-hidden">
+      <main className="flex flex-col gap-6 flex-shrink-0 xl:w-1/4 md:w-1/3 sm:w-1/2 w-full">
+        <WidgetPanel className="h-1/2">
           <h1 className="text-white text-2xl font-bold mb-4">Профиль пользователя</h1>
           <AvatarImage user={user} isModalOpen={isModalOpen} openModal={openModal} />
           <div className="text-white">
@@ -100,15 +94,17 @@ export const Profile: React.FC = () => {
             {user.updatedAt && <p>Последнее обновление: {new Date(user.updatedAt).toLocaleDateString()}</p>}
           </div>
         </WidgetPanel>
-        <WidgetPanel className="flex-2">
-          <h2 className="text-xl font-bold mb-4 border-b border-gray-700 pb-2 text-white">Здесь что-нибудь будет</h2>
+        <WidgetPanel className="h-1/2">
+          <h2 className="text-xl font-bold text-white">Здесь что-нибудь будет</h2>
+          <h3 className="text-md font-bold mb-4 border-b border-gray-700 pb-2 text-gray-500">(in develop...)</h3>
         </WidgetPanel>
       </main>
 
-      <aside className="flex flex-col gap-6 w-1/4 min-w-[250px]">
-        <WidgetPanel className="h-full">
+      <aside className="flex flex-col gap-6 flex-shrink-0 xl:w-1/4 md:w-1/3 sm:w-1/2 w-full">
+        <WidgetPanel className="md:h-full h-1/2">
           <>
-            <h2 className="text-xl font-bold mb-4 border-b border-gray-700 pb-2 text-white">История активности</h2>
+            <h2 className="text-xl font-bold text-white">История активности</h2>
+            <h3 className="text-md font-bold mb-4 border-b border-gray-700 pb-2 text-gray-500">(in develop...)</h3>
             <ul className="overflow-auto">
               {activityHistory.length === 0 ? (
                 <li className="text-gray-400">Активность отсутствует</li>
