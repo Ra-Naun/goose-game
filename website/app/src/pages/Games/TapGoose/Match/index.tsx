@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Container } from "pixi.js";
 import { useExtend } from "@pixi/react";
 import { Navigate, useParams } from "@tanstack/react-router";

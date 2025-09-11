@@ -5,15 +5,14 @@ services:
     container_name: nginx
     build:
       context: .
-      dockerfile: ./docker/dev/Dockerfile
+      dockerfile: ./docker/test/Dockerfile
     ports:
       - '80:80'
-      - '443:443'
     volumes:
-      - ./logs/dev/nginx:/var/log/nginx
-      - ./files/certs/:/etc/nginx/certs/
+      - ./logs/test/nginx:/var/log/nginx
       - ./files/html/:/etc/nginx/html/
-      - ./files/nginx.dev.conf:/etc/nginx/nginx.conf
+      - ./files/nginx.test.conf:/etc/nginx/nginx.conf
+      - ../website/app/dist:/usr/share/website/dist:ro
     restart: always
     environment:
       - TZ=Europe/Moscow

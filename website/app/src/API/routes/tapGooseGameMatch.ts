@@ -3,7 +3,6 @@ import { WEBSOCKET_CHANEL_SEND } from "@/src/config/ws.config";
 import { apiClient } from "../client/apiClient";
 import { wsClientTapGoose } from "../client/wsClientTapGoose";
 import type {
-  GameMatch,
   GameMatchFromServer,
   HistoryOfGameMatch,
   JoinToMatchPayload,

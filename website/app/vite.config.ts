@@ -8,7 +8,7 @@ const __dirname = path.dirname(__filename);
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: "/",
+  base: "./",
   resolve: { alias: { "@": path.resolve(__dirname, "./") } },
   plugins: [react()],
   css: {
@@ -24,6 +24,18 @@ export default defineConfig({
       protocol: "ws",
       host: "localhost",
       port: 3000,
+    },
+  },
+
+  build: {
+    outDir: "dist",
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        entryFileNames: "assets/[name].[hash].js",
+        chunkFileNames: "assets/[name].[hash].js",
+        assetFileNames: "assets/[name].[hash].[ext]",
+      },
     },
   },
 });

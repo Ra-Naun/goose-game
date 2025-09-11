@@ -1,0 +1,12 @@
+version: '3'
+
+services:
+  frontend:
+    container_name: web-test
+    build:
+      context: .
+      dockerfile: ./docker/test/Dockerfile
+    env_file:
+      - ./docker/test/.env
+    volumes:
+     - ./app/dist:/app/dist

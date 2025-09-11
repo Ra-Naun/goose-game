@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 
 export const useViewerSizes = () => {
   const containerRef = useRef<HTMLDivElement>(null);

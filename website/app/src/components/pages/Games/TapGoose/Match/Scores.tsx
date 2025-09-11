@@ -4,7 +4,6 @@ import { AvatarImage } from "@/src/components/Goose-UI/Avatar/AvatarImage";
 import { Description } from "@/src/components/Goose-UI/Avatar/Description";
 import { OnlineStatus } from "@/src/components/Goose-UI/Avatar/OnlineStatus";
 import { useSortedScores } from "@/src/hooks/games/tapGoose/useSortedScores";
-import { getUserInitials } from "@/src/utils";
 type UserScoreItemProps = ScoreWithPosition & {
   avatarUrl: string;
   isOnline: boolean;
@@ -12,7 +11,6 @@ type UserScoreItemProps = ScoreWithPosition & {
 };
 
 const UserScoreItem: React.FC<UserScoreItemProps> = ({
-  playerId,
   score,
   position,
   username,

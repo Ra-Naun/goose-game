@@ -3,7 +3,6 @@ import { useNavigate } from "@tanstack/react-router";
 import { profilePath } from "@/src/router/paths";
 import type { User } from "@/src/store/types";
 import { Ripple } from "../Goose-UI/Ripple";
-import { getUserInitials } from "@/src/utils";
 import { AvatarImage } from "../Goose-UI/Avatar/AvatarImage";
 
 interface UserMenuListProps extends React.HTMLAttributes<HTMLUListElement> {

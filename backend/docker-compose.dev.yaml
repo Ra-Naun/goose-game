@@ -10,13 +10,17 @@ services:
       - SERVER_ID=s1
     env_file:
       - ./docker/dev/.env
-    ports:
-      - '7777:3000'
     volumes:
       - ./app:/usr/src/app
     restart: always
     networks:
       - backend-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
 
   backend-dev-instance-2:
     container_name: backend-dev-instance-2
@@ -32,6 +36,12 @@ services:
     restart: always
     networks:
       - backend-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
 
   backend-dev-instance-3:
     container_name: backend-dev-instance-3
@@ -47,6 +57,12 @@ services:
     restart: always
     networks:
       - backend-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
 
 networks:
   backend-network:

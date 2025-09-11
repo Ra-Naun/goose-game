@@ -3,7 +3,6 @@ import { Input } from "@/src/components/Goose-UI/Forms/Input";
 import { Loading } from "@/src/components/Goose-UI/Loading";
 import { OnlineStatus } from "@/src/components/Goose-UI/Avatar/OnlineStatus";
 import { useOnlineUsers } from "@/src/hooks/user/useOnlineUsers";
-import { getUserInitials } from "@/src/utils";
 import { useMemo, useState } from "react";
 
 type OnlineUserItemProps = {

@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { MatchStatus, type GameMatch, type MatchPlayerInfo } from "@/src/API/types/match.types";
+import { type GameMatch, type MatchPlayerInfo } from "@/src/API/types/match.types";
 import type { UpdateGameMatchDataFromServer } from "./types";
 
 type State = {

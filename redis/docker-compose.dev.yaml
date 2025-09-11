@@ -1,4 +1,4 @@
-version: '3.9'
+version: '3'
 
 services:
   redis:
@@ -6,10 +6,6 @@ services:
     image: redis:8.2-alpine3.22 
     # ports:
     #   - "6379:6379"
-    # environment:
-    #   - REDIS_PASSWORD=${REDIS_PASSWORD}
-    #   - REDIS_USER=${REDIS_USER}
-    #   - REDIS_USER_PASSWORD=${REDIS_USER_PASSWORD}
     env_file:
       - ./.env
     volumes:

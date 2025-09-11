@@ -1,10 +1,5 @@
 import { useAvailableMatches } from "@/src/hooks/games/tapGoose/useAvailableMatches";
-import {
-  type GameMatch,
-  type JoinToMatchPayload,
-  type CreateMatchPayload,
-  MatchStatus,
-} from "@/src/API/types/match.types";
+import { type GameMatch, type JoinToMatchPayload, MatchStatus } from "@/src/API/types/match.types";
 import { matchService } from "@/src/services/matchService";
 import { useUserStore } from "@/src/store/userStore";
 import { Navigate, useNavigate } from "@tanstack/react-router";
@@ -111,7 +106,7 @@ export const AvailableMatches: React.FC = () => {
   };
 
   if (!user) {
-    return <Navigate to={loginPath} replace />;
+    return <Navigate to={loginPath} />;
   }
 
   return (

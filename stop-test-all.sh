@@ -14,6 +14,6 @@ cd ../website
 docker compose -f ./docker-compose.test.yaml down
 
 cd ../nginx
-docker compose -f ./docker-compose.dev.yaml down
+docker compose -f ./docker-compose.test.yaml down
 
 docker network rm backend-network
