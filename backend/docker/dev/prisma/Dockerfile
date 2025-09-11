@@ -9,8 +9,6 @@ RUN apk add --update \
 
 WORKDIR /usr/src/app
 
-
-
 CMD ["sh", "-c", "yarn install &&\
   yarn prisma db push &&\
   yarn prisma generate &&\

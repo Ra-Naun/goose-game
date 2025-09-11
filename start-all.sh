@@ -42,7 +42,53 @@ wait_for_container_exit() {
   echo "Exit code: $exit_code"
 }
 
-./stop-"${mode}"-all.sh
+open_url() {
+  mode="$1"
+
+  if [ "$mode" = "dev" ]; then
+    ui_url="https://localhost/"
+    pgadmin_url="https://localhost/pgadmin/"
+    swager_url="https://localhost/api/docs/api/"
+    async_api_url="https://localhost/api/docs/async-api/"
+  elif [ "$mode" = "test" ]; then
+    ui_url="http://localhost:4014/"
+    pgadmin_url="http://localhost:4014/pgadmin/"
+    swager_url="http://localhost:4014/api/docs/api/"
+    async_api_url="http://localhost:4014/api/docs/async-api/"
+  else
+    echo "Ошибка: неизвестный режим '$mode' для открытия URL"
+    return 1
+  fi
+
+  if command -v xdg-open > /dev/null; then
+    # Linux
+    xdg-open "$ui_url"
+    xdg-open "$pgadmin_url"
+    xdg-open "$async_api_url"
+    xdg-open "$swager_url"
+  elif command -v open > /dev/null; then
+    # macOS
+    open "$ui_url"
+    open "$pgadmin_url"
+    open "$async_api_url"
+    open "$swager_url"
+  elif command -v powershell > /dev/null; then
+    # Windows (git-bash, WSL или аналогичные оболочки)
+    powershell.exe Start-Process "$ui_url"
+    powershell.exe Start-Process "$pgadmin_url"
+    powershell.exe Start-Process "$async_api_url"
+    powershell.exe Start-Process "$swager_url"
+  else
+    echo "Не удалось определить команду для открытия браузера. Откройте вручную:\n \
+    UI: $ui_url\n \
+    PGAdmin: $pgadmin_url\n \
+    Docs Websokets API: $async_api_url\n \
+    Docs API (Swager): $swager_url\n \
+    "
+  fi
+}
+
+./stop-all.sh "${mode}"
 
 docker network create backend-network
 
@@ -63,8 +109,8 @@ while ! docker exec redis_container redis-cli --raw incr ping; do
 done
 
 # Выполнить prisma команды внутри контейнера
-docker compose -f ./backend/docker-compose.prisma.yaml build
-docker compose -f ./backend/docker-compose.prisma.yaml up -d
+docker compose -f ./backend/docker-compose.prisma.dev.yaml build
+docker compose -f ./backend/docker-compose.prisma.dev.yaml up -d
 
 echo "Ожидание выполнения команд в контейнере prisma_container..."
 wait_for_container_exit prisma_container
@@ -86,3 +132,5 @@ docker compose -f ./website/docker-compose."${mode}".yaml up -d
 # и nginx
 docker compose -f ./nginx/docker-compose."${mode}".yaml build
 docker compose -f ./nginx/docker-compose."${mode}".yaml up -d
+
+open_url "$mode"

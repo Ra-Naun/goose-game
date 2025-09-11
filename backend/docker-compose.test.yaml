@@ -6,7 +6,6 @@ services:
       dockerfile: ./docker/test/Dockerfile
     environment:
       - SERVER_ID=s1
-      - POSTGRES_URL=${POSTGRES_URL}
     env_file:
       - ./docker/test/.env
     restart: always
@@ -20,7 +19,6 @@ services:
       dockerfile: ./docker/test/Dockerfile
     environment:
       - SERVER_ID=s2
-      - POSTGRES_URL=${POSTGRES_URL}
     env_file:
       - ./docker/test/.env
     restart: always
@@ -34,7 +32,6 @@ services:
       dockerfile: ./docker/test/Dockerfile
     environment:
       - SERVER_ID=s3
-      - POSTGRES_URL=${POSTGRES_URL}
     env_file:
       - ./docker/test/.env
     restart: always

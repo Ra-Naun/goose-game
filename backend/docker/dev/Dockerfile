@@ -15,8 +15,4 @@ RUN npm i -g @nestjs/cli
 HEALTHCHECK --interval=10s --timeout=5s --start-period=15s --retries=20 \
   CMD node ./healthcheck.js
 
-
-# CMD ["sleep", "infinity"]
-
-
 CMD ["sh", "-c", "yarn install && yarn start:dev"]

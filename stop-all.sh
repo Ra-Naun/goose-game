@@ -12,7 +12,7 @@ docker compose -f ./website/docker-compose."${mode}".yaml down
 
 docker compose -f ./backend/docker-compose."${mode}".yaml down
 
-docker compose -f ./backend/docker-compose.prisma.yaml down
+docker compose -f ./backend/docker-compose.prisma.dev.yaml down
 
 docker compose -f ./redis/docker-compose.dev.yaml down
 
