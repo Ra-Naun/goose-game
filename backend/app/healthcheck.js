@@ -1,8 +1,10 @@
-import http from "http";
+import http from 'http';
 
 const options = {
-  host: "0.0.0.0",
+  host: '0.0.0.0',
   port: process.env.PORT || 3000,
+  path: '/health',
+  method: 'GET',
   timeout: 5000,
 };
 
@@ -16,7 +18,7 @@ const healthCheck = http.request(options, (res) => {
   }
 });
 
-healthCheck.on("error", function (err) {
+healthCheck.on('error', function (err) {
   console.error(`ERROR ${err}`);
   process.exit(1);
 });

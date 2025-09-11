@@ -1,5 +1,3 @@
-version: '3'
-
 services:
   backend-test-instance-1:
     container_name: backend-test-instance-1
@@ -8,17 +6,12 @@ services:
       dockerfile: ./docker/test/Dockerfile
     environment:
       - SERVER_ID=s1
+      - POSTGRES_URL=${POSTGRES_URL}
     env_file:
       - ./docker/test/.env
     restart: always
     networks:
       - backend-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 5s
 
   backend-test-instance-2:
     container_name: backend-test-instance-2
@@ -27,17 +20,12 @@ services:
       dockerfile: ./docker/test/Dockerfile
     environment:
       - SERVER_ID=s2
+      - POSTGRES_URL=${POSTGRES_URL}
     env_file:
       - ./docker/test/.env
     restart: always
     networks:
       - backend-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 5s
 
   backend-test-instance-3:
     container_name: backend-test-instance-3
@@ -46,17 +34,12 @@ services:
       dockerfile: ./docker/test/Dockerfile
     environment:
       - SERVER_ID=s3
+      - POSTGRES_URL=${POSTGRES_URL}
     env_file:
       - ./docker/test/.env
     restart: always
     networks:
       - backend-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 5s
 
 networks:
   backend-network:

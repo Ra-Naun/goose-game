@@ -1,8 +1,6 @@
-version: '3'
-
 services:
   redis:
-    container_name: redis
+    container_name: redis_container
     image: redis:8.2-alpine3.22 
     # ports:
     #   - "6379:6379"

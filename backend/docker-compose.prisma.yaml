@@ -1,0 +1,17 @@
+services:
+  prisma:
+    container_name: prisma_container
+    build:
+      context: .
+      dockerfile: ./docker/dev/prisma/Dockerfile
+    env_file:
+      - ./docker/dev/.env
+    volumes:
+      - ./app:/usr/src/app
+    restart: 'no'
+    networks:
+      - backend-network
+
+networks:
+  backend-network:
+    external: true

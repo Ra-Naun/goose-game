@@ -7,19 +7,23 @@
   "license": "UNLICENSED",
   "scripts": {
     "build": "nest build",
-    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
+
+    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
+
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
+
     "prisma:seed": "ts-node prisma/seeds/init-users.seed.ts",
-    "prisma:seed-undo": "ts-node prisma/seeds/undo-users.seed.ts"
+    "prisma:seed-undo": "ts-node prisma/seeds/undo-users.seed.ts",
+    "db:sync": "yarn prisma:seed & & prisma db push"
   },
   "dependencies": {
     "@nestjs-modules/ioredis": "^2.0.2",

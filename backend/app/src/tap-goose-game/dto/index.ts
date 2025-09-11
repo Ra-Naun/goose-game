@@ -1,6 +1,4 @@
 import {
-  IsArray,
-  IsBoolean,
   IsInt,
   IsObject,
   IsOptional,
@@ -8,11 +6,10 @@ import {
   Validate,
 } from 'class-validator';
 import { PartialType } from '@nestjs/mapped-types';
+
 import { IsPlayersRecordConstraint } from './validators/players-record.validator';
-import { MatchPlayerInfo, MatchStatus } from '../types';
+import { MatchStatus } from '../types';
 import { IsMatchStatusConstraint } from './validators/match-status.validator';
-import { UserRoleEnum } from 'src/user/dto/types';
-import { IsUserRoleArrayConstraint } from '../../user/dto/validators/roles-array.validator';
 import { IsScoresRecordConstraint } from './validators/scores-record.validator';
 
 export class CreateGooseMatchRequestDto {

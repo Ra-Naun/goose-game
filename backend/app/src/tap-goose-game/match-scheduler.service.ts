@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import uuid4 from 'uuid4';
 import { REDIS_EVENTS, REDIS_KEYS } from './config';
 import { PubSubService } from '../pub-sub/pub-sub.service';
@@ -13,7 +13,6 @@ import {
 } from './dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import {
-  ActiveMatchIsEnded,
   GameMatch,
   GameMatchCacheItem,
   MatchPlayerInfo,

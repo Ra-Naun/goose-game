@@ -1,6 +1,5 @@
 import { ConflictException, Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
-import { User } from '@prisma/client';
 import { hashPassword } from 'services/crypto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { OnlineUsers, UserDto } from './dto/user.dto';
@@ -26,7 +25,7 @@ export class UsersService {
     private readonly pubSubService: PubSubService,
   ) { }
 
-  async findByEmail(email: User['email']): Promise<UserDto | null> {
+  async findByEmail(email: string): Promise<UserDto | null> {
     const item = await this.prisma.user.findUnique({
       where: { email },
     });
@@ -39,7 +38,7 @@ export class UsersService {
     return userDto;
   }
 
-  async findById(id: User['id']): Promise<UserDto | null> {
+  async findById(id: string): Promise<UserDto | null> {
     const item = await this.prisma.user.findUnique({
       where: { id },
     });
@@ -71,7 +70,7 @@ export class UsersService {
     return await UserDto.fromDatabaseItem(item);
   }
 
-  async update(id: User['id'], dto: UpdateUserDto): Promise<UserDto> {
+  async update(id: string, dto: UpdateUserDto): Promise<UserDto> {
     const { password, ...other } = dto;
 
     const updateData = {
