@@ -7,7 +7,7 @@ services:
       context: .
       dockerfile: ./docker/test/Dockerfile
     ports:
-      - '80:80'
+      - '4014:80'
     volumes:
       - ./logs/test/nginx:/var/log/nginx
       - ./files/html/:/etc/nginx/html/
