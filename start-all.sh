@@ -92,7 +92,7 @@ open_url() {
 
 docker network create backend-network
 
-# # Поднимаем необходимые сервисы (Redis, Postgres)
+# Поднимаем необходимые сервисы (Redis, Postgres)
 docker compose -f ./redis/docker-compose.dev.yaml build
 docker compose -f ./redis/docker-compose.dev.yaml up -d
 docker compose -f ./postgresql/docker-compose.dev.yaml build
@@ -128,6 +128,7 @@ wait_for_healthy backend-"${mode}"-instance-3
 # и поднимаем фронт
 docker compose -f ./website/docker-compose."${mode}".yaml build
 docker compose -f ./website/docker-compose."${mode}".yaml up -d
+
 
 # и nginx
 docker compose -f ./nginx/docker-compose."${mode}".yaml build
