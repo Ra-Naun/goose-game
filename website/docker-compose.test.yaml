@@ -4,6 +4,8 @@ services:
     build:
       context: .
       dockerfile: ./docker/test/Dockerfile
+    ports:
+      - '3123:3000'
     env_file:
       - ./docker/test/.env
     volumes:

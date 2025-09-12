@@ -8,8 +8,6 @@ services:
       - ./docker/dev/.env
     environment:
       - CHOKIDAR_USEPOLLING=true
-    ports:
-      - '3000:3000'
     volumes:
       - ./app:/app
     restart: always
