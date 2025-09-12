@@ -92,46 +92,46 @@ open_url() {
 
 docker network create backend-network
 
-# # Поднимаем необходимые сервисы (Redis, Postgres)
-# docker compose -f ./redis/docker-compose.dev.yaml build
-# docker compose -f ./redis/docker-compose.dev.yaml up -d
-# docker compose -f ./postgresql/docker-compose.dev.yaml build
-# docker compose -f ./postgresql/docker-compose.dev.yaml up -d
-# docker compose -f ./pgadmin/docker-compose.dev.yaml build
-# docker compose -f ./pgadmin/docker-compose.dev.yaml up -d
+# Поднимаем необходимые сервисы (Redis, Postgres)
+docker compose -f ./redis/docker-compose.dev.yaml build
+docker compose -f ./redis/docker-compose.dev.yaml up -d
+docker compose -f ./postgresql/docker-compose.dev.yaml build
+docker compose -f ./postgresql/docker-compose.dev.yaml up -d
+docker compose -f ./pgadmin/docker-compose.dev.yaml build
+docker compose -f ./pgadmin/docker-compose.dev.yaml up -d
 
-# # Ожидаем готовности Postgres и Redis
-# while ! docker exec postgres_container pg_isready -U postgres_user -d postgres_db; do
-#   sleep 2
-# done
-# while ! docker exec redis_container redis-cli --raw incr ping; do
-#   sleep 2
-# done
+# Ожидаем готовности Postgres и Redis
+while ! docker exec postgres_container pg_isready -U postgres_user -d postgres_db; do
+  sleep 2
+done
+while ! docker exec redis_container redis-cli --raw incr ping; do
+  sleep 2
+done
 
-# # Выполнить prisma команды внутри контейнера
-# docker compose -f ./backend/docker-compose.prisma.dev.yaml build
-# docker compose -f ./backend/docker-compose.prisma.dev.yaml up -d
+# Выполнить prisma команды внутри контейнера
+docker compose -f ./backend/docker-compose.prisma.dev.yaml build
+docker compose -f ./backend/docker-compose.prisma.dev.yaml up -d
 
-# echo "Ожидание выполнения команд в контейнере prisma_container..."
-# wait_for_container_exit prisma_container
-# echo "Prisma команды выполнены успешно."
+echo "Ожидание выполнения команд в контейнере prisma_container..."
+wait_for_container_exit prisma_container
+echo "Prisma команды выполнены успешно."
 
-# # После успешного выполнения запустить backend
-# docker compose -f ./backend/docker-compose."${mode}".yaml build
-# docker compose -f ./backend/docker-compose."${mode}".yaml up -d
+# После успешного выполнения запустить backend
+docker compose -f ./backend/docker-compose."${mode}".yaml build
+docker compose -f ./backend/docker-compose."${mode}".yaml up -d
 
-# # Ждём готовности backend (curl health check)
-# wait_for_healthy backend-"${mode}"-instance-1
-# wait_for_healthy backend-"${mode}"-instance-2
-# wait_for_healthy backend-"${mode}"-instance-3
+# Ждём готовности backend (curl health check)
+wait_for_healthy backend-"${mode}"-instance-1
+wait_for_healthy backend-"${mode}"-instance-2
+wait_for_healthy backend-"${mode}"-instance-3
 
 # и поднимаем фронт
 docker compose -f ./website/docker-compose."${mode}".yaml build
 docker compose -f ./website/docker-compose."${mode}".yaml up -d
 
 
-# # и nginx
-# docker compose -f ./nginx/docker-compose."${mode}".yaml build
-# docker compose -f ./nginx/docker-compose."${mode}".yaml up -d
+# и nginx
+docker compose -f ./nginx/docker-compose."${mode}".yaml build
+docker compose -f ./nginx/docker-compose."${mode}".yaml up -d
 
-# open_url "$mode"
+open_url "$mode"
