@@ -49,6 +49,13 @@ export function Match() {
     setLocalScoreDelta(0);
   }, [serverScore, serverScoreLastUpdateTime]);
 
+  useEffect(() => {
+    window.scrollTo({
+      top: document.documentElement.scrollHeight,
+      behavior: "smooth",
+    });
+  }, []);
+
   const handleGooseTap = useCallback(async () => {
     if (!notEndedActiveMatch || notEndedActiveMatch.status !== MatchStatus.ONGOING) {
       return;
@@ -111,8 +118,8 @@ export function Match() {
   }
 
   return (
-    <div className="flex gap-4 p-4 w-full h-full">
-      <WidgetPanel className="w-full min-h-full text-gray-100">
+    <div className="flex gap-4 p-4 w-full h-full flex-col md:flex-row">
+      <WidgetPanel className="w-full text-gray-100">
         <div ref={containerRef} className="flex-1 rounded-lg overflow-hidden w-full h-full">
           <PixiViewer
             width={width}
@@ -127,7 +134,7 @@ export function Match() {
         </div>
       </WidgetPanel>
 
-      <aside className="w-1/4">
+      <aside className="md:w-1/4 w-full md:min-h-full min-h-1/3">
         <WidgetPanel className="w-full h-full">
           {!!displayScores && !!notEndedActiveMatch && (
             <Scores
