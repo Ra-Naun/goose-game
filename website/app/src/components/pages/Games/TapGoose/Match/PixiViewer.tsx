@@ -9,6 +9,7 @@ import { ErrorMessage } from "@/src/components/Goose-UI/ErrorMessage";
 import { Button } from "@/src/components/Goose-UI/Forms/Button";
 import { Link } from "@/src/components/Goose-UI/Link";
 import { tapGooseLobbyPath } from "@/src/router/paths";
+import { formatTime } from "@/src/utils";
 
 interface PixiViewerProps extends Partial<React.ComponentProps<typeof Application>> {
   handleGooseTap: () => void;
@@ -20,12 +21,6 @@ interface PixiViewerProps extends Partial<React.ComponentProps<typeof Applicatio
   width: number;
   height: number;
 }
-
-const formatTime = (seconds: number) => {
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${m}:${s.toString().padStart(2, "0")}`;
-};
 
 export const PixiViewer: React.FC<PixiViewerProps> = (props) => {
   useExtend({ Container });
@@ -72,8 +67,8 @@ export const PixiViewer: React.FC<PixiViewerProps> = (props) => {
 
   if (!started) {
     return (
-      <div className="flex items-center justify-center h-full text-6xl font-bold">
-        {timeToStartLeft ? `Матч начнется через ${timeToStartLeft || 0}s` : "Ожидание начала матча..."}
+      <div className="flex text-center items-center justify-center h-full font-bold text-2xl md:text-4xl xl:text-6xl  ">
+        {timeToStartLeft ? `Матч начнется через ${formatTime(timeToStartLeft) || 0}s` : "Ожидание начала матча..."}
       </div>
     );
   }
