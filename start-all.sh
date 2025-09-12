@@ -125,9 +125,13 @@ wait_for_healthy backend-"${mode}"-instance-1
 wait_for_healthy backend-"${mode}"-instance-2
 wait_for_healthy backend-"${mode}"-instance-3
 
-# и поднимаем фронт
+# и билдим фронт
 docker compose -f ./website/docker-compose."${mode}".yaml build
 docker compose -f ./website/docker-compose."${mode}".yaml up -d
+
+echo "Ожидание сборки фронтенда..."
+wait_for_container_exit goose-web-test
+echo "Сборка фронтенда прошла успешно."
 
 
 # и nginx

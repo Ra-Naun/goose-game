@@ -9,16 +9,6 @@ interface Listeners {
   [event: string]: Set<EventCallback>;
 }
 
-// export const getStatusOkResponse = (payload: Record<string, any> = {}) => ({
-//   status: 'ok',
-//   ...payload,
-// });
-
-// export const getStatusErrorResponse = (message: string) => ({
-//   status: 'error',
-//   message,
-// });
-
 type StatusOkResponse<R> = {
   status: "ok";
 } & R;
