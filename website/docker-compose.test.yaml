@@ -1,6 +1,6 @@
 services:
   frontend:
-    container_name: web-test
+    container_name: goose-web-test
     build:
       context: .
       dockerfile: ./docker/test/Dockerfile

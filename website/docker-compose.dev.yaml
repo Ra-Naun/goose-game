@@ -1,6 +1,6 @@
 services:
   website:
-    container_name: web-dev
+    container_name: goose-web-dev
     build:
       context: .
       dockerfile: ./docker/dev/Dockerfile
