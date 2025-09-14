@@ -121,8 +121,7 @@ export class TapGooseGameGateway
                   UserGooseTapPubSubEventDto,
                   parsedMessage,
                 );
-                const { matchId } = msg;
-                const roomKey = WEBSOCKET_ROOM.getMatchRoomKey(matchId);
+                const roomKey = WEBSOCKET_ROOM.getMatchRoomKey(msg.matchId);
                 // Отправляем только в комнату матча
                 this.server
                   .to(roomKey)

@@ -10,17 +10,18 @@ import {
   UserLeaveGooseMatchPubSubEventDto,
   StartedGooseGameMatchPubSubEventDto,
   EndedGooseGameMatchPubSubEventDto,
+  GameMatchCacheItemDto,
 } from './dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import {
-  GameMatch,
-  GameMatchCacheItem,
-  MatchPlayerInfo,
+  GooseMatch,
+  GooseMatchCacheItem,
+  GooseMatchPlayerInfo,
   MatchStatus,
 } from './types';
 import { getServerId } from 'src/config/env.config';
 import { UsersService } from 'src/user/user.service';
-import { UserDto } from 'src/user/dto/user.dto';
+import { UserDto } from 'src/user/dto';
 import { HelperService } from './helper.service';
 import { validateDto } from 'src/utils/validateDto';
 
@@ -47,37 +48,47 @@ export class MatchSchedulerService {
     const now = Date.now();
 
     for (const item of items) {
-      if (!item) continue;
+      try {
+        if (!item) continue;
+        const match: GooseMatchCacheItem = JSON.parse(item);
+        const cachedMatchDto = await validateDto(GameMatchCacheItemDto, match);
 
-      const match: GameMatchCacheItem = JSON.parse(item);
+        const matchStatus: MatchStatus | null = await this.cacheService.get(
+          REDIS_KEYS.getMatchStatusKey(cachedMatchDto.id),
+        );
 
-      const matchStatus: MatchStatus | null = await this.cacheService.get(
-        REDIS_KEYS.getMatchStatusKey(match.id),
-      );
+        if (cachedMatchDto.serverId !== serverId) {
+          continue;
+        }
 
-      if (match.serverId !== serverId) {
-        continue;
-      }
+        if (matchStatus === MatchStatus.WAITING) {
+          const elapsedMs = now - cachedMatchDto.createdTime;
+          const cooldownMs = cachedMatchDto.cooldownMs;
+          const remainingMs = Math.max(cooldownMs - elapsedMs, 0);
 
-      if (matchStatus === MatchStatus.WAITING) {
-        const elapsedMs = now - match.createdTime;
-        const cooldownMs = match.cooldownMs;
-        const remainingMs = Math.max(cooldownMs - elapsedMs, 0);
+          const nextStepCallback = async () => {
+            await this.startMatch(cachedMatchDto.id);
+          };
 
-        const nextStepCallback = async () => {
-          await this.startMatch(match.id);
-        };
+          this.runNextStepAfterTime(remainingMs, nextStepCallback);
+        } else if (
+          matchStatus === MatchStatus.ONGOING &&
+          cachedMatchDto.startTime
+        ) {
+          const elapsedSinceStartMs = now - cachedMatchDto.startTime;
+          const matchDurationMs = cachedMatchDto.matchDurationSeconds * 1000;
+          const remainingMs = Math.max(
+            matchDurationMs - elapsedSinceStartMs,
+            0,
+          );
 
-        this.runNextStepAfterTime(remainingMs, nextStepCallback);
-      } else if (matchStatus === MatchStatus.ONGOING && match.startTime) {
-        const elapsedSinceStartMs = now - match.startTime;
-        const matchDurationMs = match.matchDurationSeconds * 1000;
-        const remainingMs = Math.max(matchDurationMs - elapsedSinceStartMs, 0);
-
-        const nextStepCallback = async () => {
-          await this.endMatch(match.id);
-        };
-        this.runNextStepAfterTime(remainingMs, nextStepCallback);
+          const nextStepCallback = async () => {
+            await this.endMatch(cachedMatchDto.id);
+          };
+          this.runNextStepAfterTime(remainingMs, nextStepCallback);
+        }
+      } catch (error) {
+        console.error(error);
       }
     }
   }
@@ -96,14 +107,14 @@ export class MatchSchedulerService {
     const matchId = uuid4();
     const now = Date.now();
 
-    const currentPlayerInfo: MatchPlayerInfo = {
+    const currentPlayerInfo: GooseMatchPlayerInfo = {
       id: user.id,
       username: user.username,
       email: user.email,
       avatarUrl: user.avatarUrl,
     };
 
-    const matchMetadata: GameMatchCacheItem = {
+    const matchMetadata: GooseMatchCacheItem = {
       id: matchId,
       title: dto.title,
       createdTime: now,
@@ -113,18 +124,23 @@ export class MatchSchedulerService {
       serverId: getServerId(),
     };
 
+    const matchMetadataDto = await validateDto(
+      GameMatchCacheItemDto,
+      matchMetadata,
+    );
+
     const scores = { [user.id]: 0 };
     const players = { [user.id]: currentPlayerInfo };
     const status = MatchStatus.WAITING;
 
-    const dataForMatchCreatedPubSubEvent: GameMatch = {
-      ...matchMetadata,
+    const dataForMatchCreatedPubSubEvent: GooseMatch = {
+      ...matchMetadataDto,
       status,
       scores,
       players,
     };
     delete dataForMatchCreatedPubSubEvent['serverId'];
-    const match_created_msg = await validateDto(
+    const matchCreatedMsg = await validateDto(
       GooseGameMatchDto,
       dataForMatchCreatedPubSubEvent,
     );
@@ -139,7 +155,7 @@ export class MatchSchedulerService {
 
     await this.pubSubService.publish(
       REDIS_EVENTS.GOOSE_MATCH_CREATED,
-      JSON.stringify(match_created_msg),
+      JSON.stringify(matchCreatedMsg),
     );
 
     await this.addPlayerToMatch(matchId, user.id);
@@ -223,7 +239,7 @@ export class MatchSchedulerService {
       );
     }
 
-    const match: GameMatch = {
+    const match: GooseMatch = {
       ...matchMetaData,
       scores,
       players,
@@ -234,7 +250,7 @@ export class MatchSchedulerService {
     await this.helper.clearMatchCache(matchId);
   }
 
-  private saveMatchResultsToDatabase(match: GameMatch) {
+  private saveMatchResultsToDatabase(match: GooseMatch) {
     const matchRecord = this.prisma.match.create({
       data: {
         id: match.id,
@@ -269,7 +285,7 @@ export class MatchSchedulerService {
     const user = await this.usersService.findById(playerId);
     if (!user) throw new Error('User not found');
 
-    const matchPlayerInfo: MatchPlayerInfo = {
+    const matchPlayerInfo: GooseMatchPlayerInfo = {
       id: playerId,
       username: user.username,
       email: user.email,

@@ -1,10 +1,11 @@
 import { useMatchesHistory } from "@/src/hooks/games/tapGoose/useMatchHistory";
-import { useUserStore } from "@/src/store/userStore";
+import { useUserStore } from "@/src/store/user/userStore";
 import { AvailableMatches } from "@/src/components/pages/Games/TapGoose/Lobby/AvailableMatches";
 import { MatchesHistory } from "@/src/components/pages/Games/TapGoose/Lobby/MatchesHistory";
 import { WidgetPanel } from "@/src/components/WidgetPanel";
 import { OnlineUsers } from "@/src/components/pages/Games/TapGoose/Lobby/OnlineUsers";
 import { useWebSocketEventHandlers } from "@/src/hooks/games/tapGoose/useWebSocketEventHandlers";
+import { Chat } from "@/src/components/pages/Games/TapGoose/Lobby/Chat";
 
 export const Lobby: React.FC = () => {
   useWebSocketEventHandlers();
@@ -17,7 +18,7 @@ export const Lobby: React.FC = () => {
   } = useMatchesHistory(user.id);
 
   return (
-    <div className="min-h-screen w-full flex flex-col sm:flex-row gap-6 pt-3 pb-3 sm:pt-6 sm:pb-6 sm:justify-between overflow-x-hidden">
+    <div className="max-h-screen min-h-screen w-full flex flex-col sm:flex-row gap-6 pt-3 pb-3 sm:pt-6 sm:pb-6 sm:justify-between overflow-x-hidden">
       <main className="flex flex-col gap-6 flex-shrink-0 xl:w-1/2 md:w-1/2 sm:w-1/2 w-full max-w-full">
         <WidgetPanel className="w-full" role="list">
           <AvailableMatches />
@@ -35,6 +36,9 @@ export const Lobby: React.FC = () => {
       <aside className="flex flex-col gap-6 flex-shrink-0 xl:w-1/4 md:w-1/3 sm:w-1/2 w-full">
         <WidgetPanel className="w-full" role="list">
           <OnlineUsers />
+        </WidgetPanel>
+        <WidgetPanel className="w-full" role="region" aria-label="Чат">
+          <Chat />
         </WidgetPanel>
       </aside>
     </div>

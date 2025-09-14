@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useUserStore } from "../../store/userStore";
+import { useUserStore } from "@/src/store/user/userStore";
 import { getUserInitials } from "@/src/utils";
 import { WidgetPanel } from "@/src/components/WidgetPanel";
 import Modal from "@/src/components/Goose-UI/Modal";
@@ -83,7 +83,7 @@ export const Profile: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen w-full flex flex-col sm:flex-row gap-6 pt-3 pb-3 sm:pt-6 sm:pb-6 sm:justify-between overflow-x-hidden">
+    <div className="max-h-screen min-h-screen w-full flex flex-col sm:flex-row gap-6 pt-3 pb-3 sm:pt-6 sm:pb-6 sm:justify-between overflow-x-hidden">
       <main className="flex flex-col gap-6 flex-shrink-0 xl:w-1/4 md:w-1/3 sm:w-1/2 w-full">
         <WidgetPanel className="h-1/2">
           <h1 className="text-white text-2xl font-bold mb-4">Профиль пользователя</h1>

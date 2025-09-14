@@ -23,9 +23,13 @@ import type { JwtSocket } from 'src/types/socket-user';
 import { authMiddleware } from '../auth/websocketsMiddlewares/auth.middleware';
 import { PubSubService } from 'src/pub-sub/pub-sub.service';
 import { UsersSockets } from 'src/utils/UsersSockets';
-import { OnlineUserChangedPubSubEventDto } from './dto/online-user-changed-pub-sub-event.dto';
+import {
+  OnlineUserChangedPubSubEventData,
+  OnlineUserChangedPubSubEventDto,
+  OnlineUserInfo,
+  OnlineUserInfoDto,
+} from './dto';
 import { validateDto } from 'src/utils/validateDto';
-import { OnlineUserInfoDto } from './dto/online-user.info.dto';
 import {
   getStatusErrorResponse,
   getStatusOkResponse,
@@ -67,7 +71,7 @@ export class UserGateway
             case REDIS_EVENTS.ONLINE_USERS_CHANGED: {
               try {
                 const userStatusesPromises = (
-                  parsedMessage as OnlineUserChangedPubSubEventDto[]
+                  parsedMessage as OnlineUserChangedPubSubEventData[]
                 ).map(async (userStatus) => {
                   const userStatusValidated = await validateDto(
                     OnlineUserChangedPubSubEventDto,
@@ -78,7 +82,7 @@ export class UserGateway
                     userStatusValidated.playerId,
                   ))!;
 
-                  const userInfo: OnlineUserInfoDto = {
+                  const userInfo: OnlineUserInfo = {
                     id: user.id,
                     email: user.email,
                     username: user.username,

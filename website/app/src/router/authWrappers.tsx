@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { Navigate, useNavigate } from "@tanstack/react-router";
 
-import { useAuthCheck } from "@/src/hooks/useAuthCheck";
+import { useAuthCheck } from "@/src/hooks/user/useAuthCheck";
 import { Loading } from "@/src/components/Goose-UI/Loading";
 import { UserNotificationService } from "@/src/services/userNotificationService";
 import { Layout } from "@/src/components/Layout";

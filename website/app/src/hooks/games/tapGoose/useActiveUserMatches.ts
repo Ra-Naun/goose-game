@@ -2,9 +2,9 @@ import { useQuery } from "@tanstack/react-query";
 import { matchService } from "@/src/services/matchService";
 import { STALE_TIME } from "@/src/config/tanQuery";
 import { useEffect, useMemo } from "react";
-import { useWebSocketStore } from "@/src/store/webSocketStore";
+import { useWebSocketStore } from "@/src/store/ws/webSocketStore";
 import { wsClientTapGoose } from "@/src/API/client/wsClientTapGoose";
-import { useActiveUserGameStore } from "@/src/store/activeUserGamesStore";
+import { useActiveUserGameStore } from "@/src/store/games/tapGoose/activeUserGamesStore";
 
 export const useActiveUserMatch = (matchId: string) => {
   const isConnected = useWebSocketStore((state) => state.connectedStatuses[wsClientTapGoose.id]);
@@ -22,12 +22,12 @@ export const useActiveUserMatch = (matchId: string) => {
   useEffect(() => {
     if (!queryResult.data) return;
     setMatch(queryResult.data);
-  }, [queryResult.data, setMatch]);
+  }, [queryResult.data]);
 
   return useMemo(
     () => ({
       ...queryResult,
-      isLoading: !isConnected || queryResult.isLoading || !matchId,
+      isLoading: !isConnected || !matchId || queryResult.isLoading,
       data: activeMatch,
     }),
     [queryResult, activeMatch]

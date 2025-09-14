@@ -1,7 +1,7 @@
 import { useAvailableMatches } from "@/src/hooks/games/tapGoose/useAvailableMatches";
 import { type GameMatch, type JoinToMatchPayload, MatchStatus } from "@/src/API/types/match.types";
 import { matchService } from "@/src/services/matchService";
-import { useUserStore } from "@/src/store/userStore";
+import { useUserStore } from "@/src/store/user/userStore";
 import { Navigate, useNavigate } from "@tanstack/react-router";
 import { Button, ButtonWithOpacity } from "@/src/components/Goose-UI/Forms/Button";
 import { UserNotificationService } from "@/src/services/userNotificationService";

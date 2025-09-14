@@ -1,6 +1,4 @@
 import { useMemo } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import { useAvailableGamesStore } from "@/src/store/availableGamesStore";
 import { WEBSOCKET_CHANEL_LISTEN } from "@/src/config/ws.config";
 import {
   MatchStatus,
@@ -10,13 +8,13 @@ import {
 } from "@/src/API/types/match.types";
 import type { WSSubscribesData } from "@/src/hooks/types";
 import type { EndedGameMatchDataFromServer, StartedGameMatchDataFromServer } from "@/src/store/types";
-import { useActiveUserGameStore } from "@/src/store/activeUserGamesStore";
-import { useUserStore } from "@/src/store/userStore";
+import { useActiveUserGameStore } from "@/src/store/games/tapGoose/activeUserGamesStore";
+import { useUserStore } from "@/src/store/user/userStore";
 import { parseServerMatchDataToClientMatchData } from "@/src/services/utils";
+import { useAvailableGamesStore } from "@/src/store/games/tapGoose/availableGamesStore";
 
 export function useWSSubscribesData(): WSSubscribesData {
   const user = useUserStore((state) => state.user);
-  const queryClient = useQueryClient();
 
   const addAvailableMatch = useAvailableGamesStore((state) => state.addMatch);
   const removeAvailableMatch = useAvailableGamesStore((state) => state.removeMatch);
@@ -45,7 +43,6 @@ export function useWSSubscribesData(): WSSubscribesData {
         },
 
         [WEBSOCKET_CHANEL_LISTEN.MATCH_STARTED]: (matchUpdate: StartedGameMatchDataFromServer) => {
-          queryClient.invalidateQueries({ queryKey: [`activeMatch:${matchUpdate.id}`] });
           const availableMatch = getAvailableMatchById(matchUpdate.id);
           if (user && availableMatch?.players && !availableMatch.players[user.id]) {
             removeAvailableMatch(matchUpdate.id);
@@ -57,7 +54,6 @@ export function useWSSubscribesData(): WSSubscribesData {
         },
 
         [WEBSOCKET_CHANEL_LISTEN.MATCH_ENDED]: (matchUpdate: EndedGameMatchDataFromServer) => {
-          queryClient.invalidateQueries({ queryKey: [`activeMatch:${matchUpdate.id}`] });
           const availableMatch = getAvailableMatchById(matchUpdate.id);
           if (availableMatch) {
             removeAvailableMatch(matchUpdate.id);
@@ -77,7 +73,6 @@ export function useWSSubscribesData(): WSSubscribesData {
           matchPlayerInfo: MatchPlayerInfo;
           matchId: string;
         }) => {
-          queryClient.invalidateQueries({ queryKey: [`activeMatch:${matchId}`] });
           addUserToAvailableMatch(matchPlayerInfo, matchId);
           if (isCurrentActiveMatch(matchId)) {
             addUserToActiveMatch(matchPlayerInfo);
@@ -85,7 +80,6 @@ export function useWSSubscribesData(): WSSubscribesData {
         },
 
         [WEBSOCKET_CHANEL_LISTEN.USER_LEAVE]: ({ playerId, matchId }: { playerId: string; matchId: string }) => {
-          queryClient.invalidateQueries({ queryKey: [`activeMatch:${matchId}`] });
           removeUserFromAvailableMatch(playerId, matchId);
           const activeMatch = getActiveMatch();
 

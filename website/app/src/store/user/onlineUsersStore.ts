@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { UpdatePartialOnlineUsers, OnlineUserInfo } from "./types";
+import type { UpdatePartialOnlineUsers, OnlineUserInfo } from "../types";
 
 type State = {
   onlineUsers: Record<string, OnlineUserInfo>; // key is user id

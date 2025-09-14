@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useUserStore } from "@/src/store/userStore";
+import { useUserStore } from "@/src/store/user/userStore";
 import { userService } from "@/src/services/userService";
 import { STALE_TIME } from "@/src/config/tanQuery";
 import { useMemo } from "react";

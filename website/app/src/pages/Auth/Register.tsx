@@ -3,7 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { Input } from "@/src/components/Goose-UI/Forms/Input";
 import { Ripple } from "@/src/components/Goose-UI/Ripple";
 import { Button } from "@/src/components/Goose-UI/Forms/Button";
-import { useUserStore } from "@/src/store/userStore";
+import { useUserStore } from "@/src/store/user/userStore";
 import { UserNotificationService } from "@/src/services/userNotificationService";
 import { userService } from "@/src/services/userService";
 import { ApiError } from "@/src/API/helpers/errors";

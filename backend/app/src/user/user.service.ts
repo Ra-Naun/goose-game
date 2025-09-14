@@ -1,8 +1,5 @@
 import { ConflictException, Injectable } from '@nestjs/common';
-import { CreateUserDto } from './dto/create-user.dto';
-import { hashPassword } from 'services/crypto';
-import { UpdateUserDto } from './dto/update-user.dto';
-import { OnlineUsers, UserDto } from './dto/user.dto';
+import { hashPassword } from 'libs/crypto';
 import { getUserRoleOnCreate as getUserRolesOnCreate } from './utils';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { REDIS_KEYS } from 'src/tap-goose-game/config';
@@ -13,8 +10,17 @@ import {
   USER_ONLINE_KEY_REGEX,
 } from './config';
 import { PubSubService } from 'src/pub-sub/pub-sub.service';
-import { OnlineUserInfoDto } from './dto/online-user.info.dto';
-import { OnlineUserChangedPubSubEventDto } from './dto/online-user-changed-pub-sub-event.dto';
+
+import {
+  UserDto,
+  OnlineUserChangedPubSubEventData,
+  OnlineUserChangedPubSubEventDto,
+  OnlineUserInfo,
+  OnlineUserInfoDto,
+  OnlineUsers,
+  UpdateUserDto,
+  CreateUserDto,
+} from './dto';
 import { validateDto } from 'src/utils/validateDto';
 
 @Injectable()
@@ -102,7 +108,7 @@ export class UsersService {
           if (!user) {
             continue;
           }
-          const userInfo: OnlineUserInfoDto = {
+          const userInfo: OnlineUserInfo = {
             id: user.id,
             email: user.email,
             username: user.username,
@@ -133,10 +139,11 @@ export class UsersService {
       async () => {
         const isOnline = await this.cacheService.get<boolean>(key);
         if (!isOnline) {
-          const msg = await validateDto(OnlineUserChangedPubSubEventDto, {
+          const data: OnlineUserChangedPubSubEventData = {
             playerId,
             isOnline: false,
-          });
+          };
+          const msg = await validateDto(OnlineUserChangedPubSubEventDto, data);
           await this.pubSubService.publish(
             REDIS_EVENTS.ONLINE_USERS_CHANGED,
             JSON.stringify([msg]),
@@ -147,11 +154,11 @@ export class UsersService {
     ); // +10 seconds buffer
 
     if (isOnline) return; // already online, no need to notify
-
-    const msg = await validateDto(OnlineUserChangedPubSubEventDto, {
+    const data: OnlineUserChangedPubSubEventData = {
       playerId,
       isOnline: true,
-    });
+    };
+    const msg = await validateDto(OnlineUserChangedPubSubEventDto, data);
     await this.pubSubService.publish(
       REDIS_EVENTS.ONLINE_USERS_CHANGED,
       JSON.stringify([msg]),
