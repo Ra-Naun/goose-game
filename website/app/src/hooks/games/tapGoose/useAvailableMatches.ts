@@ -1,14 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { matchService } from "@/src/services/matchService";
 import { STALE_TIME } from "@/src/config/tanQuery";
-import { useAvailableGamesStore } from "@/src/store/availableGamesStore";
 import { useEffect, useMemo } from "react";
-import { useWebSocketStore } from "@/src/store/webSocketStore";
+import { useWebSocketStore } from "@/src/store/ws/webSocketStore";
 import { wsClientTapGoose } from "@/src/API/client/wsClientTapGoose";
+import { useAvailableGamesStore } from "@/src/store/games/tapGoose/availableGamesStore";
 
 export const useAvailableMatches = () => {
   const isConnected = useWebSocketStore((state) => state.connectedStatuses[wsClientTapGoose.id]);
-  const addMatch = useAvailableGamesStore((state) => state.addMatch);
+  const setMatches = useAvailableGamesStore((state) => state.setMatches);
   const matches = useAvailableGamesStore((state) => state.matches);
   const queryResult = useQuery({
     queryKey: ["availableMatches"],
@@ -21,12 +21,8 @@ export const useAvailableMatches = () => {
 
   useEffect(() => {
     if (!queryResult.data) return;
-    queryResult.data.forEach((match) => {
-      if (!matches[match.id]) {
-        addMatch(match);
-      }
-    });
-  }, [queryResult.data, addMatch, matches]);
+    setMatches(queryResult.data);
+  }, [queryResult.data]);
 
   return useMemo(
     () => ({

@@ -1,0 +1,3 @@
+POSTGRES_USER={{ with secret "secret/tap-goose/postgres/dev" }}{{ .Data.data.POSTGRES_USER }}{{ end }}
+POSTGRES_PASSWORD={{ with secret "secret/tap-goose/postgres/dev" }}{{ .Data.data.POSTGRES_PASSWORD }}{{ end }}
+POSTGRES_DB={{ with secret "secret/tap-goose/postgres/dev" }}{{ .Data.data.POSTGRES_DB }}{{ end }}

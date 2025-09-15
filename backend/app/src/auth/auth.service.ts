@@ -1,9 +1,8 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
-import { CreateUserDto } from 'src/user/dto/create-user.dto';
 import { UsersService } from 'src/user/user.service';
 import { JwtService } from '@nestjs/jwt';
-import { comparePasswords } from 'services/crypto';
-import { UserDto } from 'src/user/dto/user.dto';
+import { comparePasswords } from 'src/utils/crypto';
+import { UserDto, CreateUserDto } from 'src/user/dto';
 import {
   LoginReturn,
   LoginReturnPayload,

@@ -9,10 +9,13 @@ interface ModalProps {
 const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children }) => {
   useEffect(() => {
     if (isOpen) {
+      const scrollBarWidth = window.innerWidth - document.documentElement.clientWidth;
+      document.body.style.paddingRight = `${scrollBarWidth}px`;
       document.body.classList.add("overflow-hidden");
     }
 
     return () => {
+      document.body.style.paddingRight = "";
       document.body.classList.remove("overflow-hidden");
     };
   }, [isOpen]);
@@ -35,7 +38,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children }) => {
           aria-label="Close modal"
           className={`
             absolute top-2 right-2 
-            text-3xl text-gray-600 hover:text-gray-900 
+            text-3xl text-gray-600 hover:text-red-900 
             transition-color ease-in-out duration-300
             cursor-pointer 
           `}

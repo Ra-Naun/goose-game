@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 import { wsClientTapGoose } from "@/src/API/client/wsClientTapGoose";
-import { useWebSocketStore } from "@/src/store/webSocketStore";
+import { useWebSocketStore } from "@/src/store/ws/webSocketStore";
 import { useWSSubscribesData } from "./useWSSubscribesData";
-import { useConnectWebSocket } from "../../useConnectWebSocket";
+import { useConnectWebSocket } from "../../ws/useConnectWebSocket";
 
 export function useWebSocketEventHandlers() {
   useConnectWebSocket(wsClientTapGoose);

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { useUserStore } from "@/src/store/userStore";
+import { useUserStore } from "@/src/store/user/userStore";
 import { Input } from "@/src/components/Goose-UI/Forms/Input";
 import { Ripple } from "@/src/components/Goose-UI/Ripple";
 import { Button } from "@/src/components/Goose-UI/Forms/Button";

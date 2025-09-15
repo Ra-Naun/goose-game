@@ -3,16 +3,18 @@ import { REDIS_KEYS } from './config';
 import { ExternalCacheService } from 'src/external-cache/external-cache.service';
 import {
   ActiveMatchIsEnded,
-  GameMatch,
-  GameMatchCacheItem,
-  MatchPlayerInfo,
-  MatchPlayers,
+  GooseMatch,
+  GooseMatchCacheItem,
+  GooseMatchPlayerInfo,
+  GooseMatchPlayers,
   MatchStatus,
-  PlayerScores,
-  SerializedMatchPlayers,
-  SerializedPlayerScore,
+  GoosePlayerScores,
+  SerializedGooseMatchPlayers,
+  SerializedGoosePlayerScore,
 } from './types';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { GameMatchCacheItemDto, GooseGameMatchDto } from './dto';
+import { validateDto } from 'src/utils/validateDto';
 
 @Injectable()
 export class HelperService {
@@ -23,13 +25,14 @@ export class HelperService {
 
   async getMatchMetaDataFromCache(
     matchId: string,
-  ): Promise<GameMatchCacheItem> {
+  ): Promise<GameMatchCacheItemDto> {
     const data = await this.cacheService.get<string>(
       REDIS_KEYS.getMatchKey(matchId),
     );
     if (!data) throw new Error('Match not found');
-    const match: GameMatchCacheItem = JSON.parse(data);
-    return match;
+    const match: GooseMatchCacheItem = JSON.parse(data);
+    const dto = await validateDto(GameMatchCacheItemDto, match);
+    return dto;
   }
 
   async isPlayerInMatchCache(matchId: string, playerId: string) {
@@ -41,44 +44,56 @@ export class HelperService {
     return isPlayerInMatch;
   }
 
-  async getAvailableMatches(userId: string): Promise<GameMatch[]> {
+  async getAvailableMatches(userId: string): Promise<GooseGameMatchDto[]> {
     const playerMatches = await this.getPlayerMatchesIdsFromCache(userId);
 
     const items = await this.cacheService.getManyByPattern<string>(
       REDIS_KEYS.getMatchKey('*'),
     );
 
-    const matches: GameMatch[] = [];
+    const matchesPromises: Array<Promise<GooseGameMatchDto>> = [];
     for (const item of items || []) {
-      if (item) {
-        const match: GameMatchCacheItem = JSON.parse(item);
+      try {
+        if (!item) {
+          continue;
+        }
+        const match: GooseMatchCacheItem = JSON.parse(item);
+        const cachedMatchDto = await validateDto(GameMatchCacheItemDto, match);
         const matchStatus: MatchStatus | null = await this.cacheService.get(
-          REDIS_KEYS.getMatchStatusKey(match.id),
+          REDIS_KEYS.getMatchStatusKey(cachedMatchDto.id),
         );
         if (
           matchStatus === MatchStatus.WAITING ||
-          (matchStatus === MatchStatus.ONGOING && playerMatches.has(match.id))
+          (matchStatus === MatchStatus.ONGOING &&
+            playerMatches.has(cachedMatchDto.id))
         ) {
-          const players = await this.getMatchPlayersFromCache(match.id);
-          const scores = await this.getMatchPlayersScoresFromCache(match.id);
-          const gameMatch: GameMatch = {
-            ...match,
+          const players = await this.getMatchPlayersFromCache(
+            cachedMatchDto.id,
+          );
+          const scores = await this.getMatchPlayersScoresFromCache(
+            cachedMatchDto.id,
+          );
+          const gameMatch: GooseMatch = {
+            ...cachedMatchDto,
             scores,
             players,
             status: matchStatus,
           };
           delete gameMatch['serverId'];
-          matches.push(gameMatch);
+          const gameMatchDto = validateDto(GooseGameMatchDto, gameMatch);
+          matchesPromises.push(gameMatchDto);
         }
+      } catch (error) {
+        console.error(error);
       }
     }
-    return matches;
+    return await Promise.all(matchesPromises);
   }
 
   async getPlayerActiveMatchFromCache(
     userId: string,
     matchId: string,
-  ): Promise<GameMatch | ActiveMatchIsEnded> {
+  ): Promise<GooseGameMatchDto> {
     const matchMetaData = await this.getPlayerMatchStrict(userId, matchId);
     const matchStatus: MatchStatus | null = await this.cacheService.get(
       REDIS_KEYS.getMatchStatusKey(matchId),
@@ -88,14 +103,15 @@ export class HelperService {
     }
     const players = await this.getMatchPlayersFromCache(matchMetaData.id);
     const scores = await this.getMatchPlayersScoresFromCache(matchMetaData.id);
-    const gameMatch: GameMatch = {
+    const gameMatch: GooseMatch = {
       ...matchMetaData,
       scores,
       players,
       status: matchStatus,
     };
     delete gameMatch['serverId'];
-    return gameMatch;
+    const gameMatchDto = await validateDto(GooseGameMatchDto, gameMatch);
+    return gameMatchDto;
   }
 
   async isPlayerInMatchFromDB(matchId: string, playerId: string) {
@@ -192,21 +208,26 @@ export class HelperService {
     return matches;
   }
 
-  async getPlayerMatches(playerId: string) {
+  async getPlayerMatches(
+    playerId: string,
+  ): Promise<Array<GameMatchCacheItemDto>> {
     const ids = await this.getPlayerMatchesIdsFromCache(playerId);
-    const matches: GameMatchCacheItem[] = [];
+    const matches: GameMatchCacheItemDto[] = [];
     for (const matchId of ids) {
       try {
         const match = await this.getMatchMetaDataFromCache(matchId);
         matches.push(match);
-      } catch {
-        // Ignore missing matches
+      } catch (err) {
+        console.error(err);
       }
     }
     return matches;
   }
 
-  private async getPlayerMatchStrict(playerId: string, matchId: string) {
+  private async getPlayerMatchStrict(
+    playerId: string,
+    matchId: string,
+  ): Promise<GameMatchCacheItemDto> {
     const isPlayer = await this.isPlayerInMatchCache(matchId, playerId);
 
     if (!isPlayer) {
@@ -216,30 +237,30 @@ export class HelperService {
     return matchMetaData;
   }
 
-  async getMatchPlayersFromCache(matchId: string): Promise<MatchPlayers> {
-    const playersMap: SerializedMatchPlayers = await this.cacheService.hgetall(
-      REDIS_KEYS.getMatchPlayersKey(matchId),
-    );
-    const players: MatchPlayers = Object.entries(playersMap).reduce(
+  async getMatchPlayersFromCache(matchId: string): Promise<GooseMatchPlayers> {
+    const playersMap: SerializedGooseMatchPlayers =
+      await this.cacheService.hgetall(REDIS_KEYS.getMatchPlayersKey(matchId));
+    const players: GooseMatchPlayers = Object.entries(playersMap).reduce(
       (acc, [playerId, playerSerialized]) => {
-        acc[playerId] = JSON.parse(playerSerialized) as MatchPlayerInfo;
+        acc[playerId] = JSON.parse(playerSerialized) as GooseMatchPlayerInfo;
         return acc;
       },
-      {} as MatchPlayers,
+      {} as GooseMatchPlayers,
     );
     return players;
   }
 
-  async getMatchPlayersScoresFromCache(matchId: string): Promise<PlayerScores> {
-    const scoresMap: SerializedPlayerScore = await this.cacheService.hgetall(
-      REDIS_KEYS.getMatchScoresKey(matchId),
-    );
-    const scores: PlayerScores = Object.entries(scoresMap).reduce(
+  async getMatchPlayersScoresFromCache(
+    matchId: string,
+  ): Promise<GoosePlayerScores> {
+    const scoresMap: SerializedGoosePlayerScore =
+      await this.cacheService.hgetall(REDIS_KEYS.getMatchScoresKey(matchId));
+    const scores: GoosePlayerScores = Object.entries(scoresMap).reduce(
       (acc, [playerId, scoreSerialized]) => {
         acc[playerId] = parseInt(scoreSerialized);
         return acc;
       },
-      {} as PlayerScores,
+      {} as GoosePlayerScores,
     );
     return scores;
   }

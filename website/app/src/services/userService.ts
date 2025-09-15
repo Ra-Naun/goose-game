@@ -3,7 +3,7 @@ import { userAPI } from "@/src/API/routes/user";
 import type { User, OnlineUserInfo } from "@/src/store/types";
 import { authTokenService } from "./authTokenService";
 import { parseServerUserInfoToClientUserInfo, parseServerUserToClientUser } from "./utils";
-import { useUserStore } from "@/src/store/userStore";
+import { useUserStore } from "@/src/store/user/userStore";
 
 /**
  * Сервис для бизнес-логики пользователя: логин, регистрация, получение профиля, логаут.

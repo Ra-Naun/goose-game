@@ -17,14 +17,17 @@ export type User = {
   activeGameId?: string | null;
 };
 
-export type OnlineUserInfo = {
+export interface UserInfo {
   id: string;
   email: string;
   username: string;
   avatarUrl: string;
   roles: UserRoleEnum[];
-  isOnline: boolean;
   activeGameId?: string | null;
+}
+
+export type OnlineUserInfo = UserInfo & {
+  isOnline: boolean;
 };
 
 export type UpdatePartialOnlineUsers = Array<OnlineUserInfo>;
@@ -39,3 +42,13 @@ export type EndedGameMatchDataFromServer = {
   endTime: number;
   id: string;
 };
+
+export interface ChatMessage {
+  id: string;
+  userInfo: UserInfo;
+  channelId: string;
+  content: string;
+  sendedAt: number;
+  createdAt: number;
+  updatedAt?: number;
+}

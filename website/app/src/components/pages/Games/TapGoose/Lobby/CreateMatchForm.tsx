@@ -149,8 +149,8 @@ export const CreateMatchForm: React.FC<CreateMatchFormProps> = ({
         />
       </label>
 
-      <div className="flex justify-between gap-3">
-        <Button type="button" color="danger" onClick={onClose} disabled={isCreating}>
+      <div className="flex justify-end gap-3">
+        <Button type="button" color="secondary" onClick={onClose} disabled={isCreating}>
           Отмена
         </Button>
         <Button type="submit" disabled={isCreating}>

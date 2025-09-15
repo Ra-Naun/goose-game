@@ -1,6 +1,6 @@
 import { io, Socket } from "socket.io-client";
 import { authTokenService } from "../services/authTokenService";
-import { useWebSocketStore } from "../store/webSocketStore";
+import { useWebSocketStore } from "../store/ws/webSocketStore";
 import uuid4 from "uuid4";
 
 type EventCallback = (data: any) => void;

@@ -6,7 +6,7 @@ import { ErrorMessage } from "@/src/components/Goose-UI/ErrorMessage";
 import { WidgetPanel } from "@/src/components/WidgetPanel";
 import { useSortedScores } from "@/src/hooks/games/tapGoose/useSortedScores";
 import { Cup } from "@/src/components/Cup";
-import { useUserStore } from "@/src/store/userStore";
+import { useUserStore } from "@/src/store/user/userStore";
 
 interface MatchHistoryParams {
   matchId: string;

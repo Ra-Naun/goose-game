@@ -8,7 +8,13 @@ import {
 import { PartialType } from '@nestjs/mapped-types';
 
 import { IsPlayersRecordConstraint } from './validators/players-record.validator';
-import { MatchStatus } from '../types';
+import {
+  GooseMatchCacheItem,
+  GooseMatch,
+  type GooseMatchPlayers,
+  MatchStatus,
+  type GoosePlayerScores,
+} from '../types';
 import { IsMatchStatusConstraint } from './validators/match-status.validator';
 import { IsScoresRecordConstraint } from './validators/scores-record.validator';
 
@@ -37,7 +43,7 @@ export class MatchPlayerInfoDto {
   email!: string;
 }
 
-export class GooseGameMatchDto {
+export class GooseGameMatchDto implements GooseMatch {
   @IsString()
   id!: string;
 
@@ -46,11 +52,11 @@ export class GooseGameMatchDto {
 
   @IsObject()
   @Validate(IsScoresRecordConstraint)
-  scores!: Record<string, number>;
+  scores!: GoosePlayerScores;
 
   @IsObject()
   @Validate(IsPlayersRecordConstraint)
-  players!: Record<string, MatchPlayerInfoDto>;
+  players!: GooseMatchPlayers;
 
   @IsInt()
   maxPlayers!: number;
@@ -78,6 +84,41 @@ export class GooseGameMatchDto {
   @IsOptional()
   @IsInt()
   endTime?: number; // timestamp окончания раунда
+}
+
+export class GameMatchCacheItemDto implements GooseMatchCacheItem {
+  @IsString()
+  id!: string;
+
+  @IsString()
+  title!: string;
+
+  @IsInt()
+  maxPlayers!: number;
+
+  @IsInt()
+  matchDurationSeconds!: number;
+
+  @IsInt()
+  cooldownMs!: number;
+
+  @IsInt()
+  createdTime!: number;
+
+  @IsOptional()
+  @IsInt()
+  startTime?: number;
+
+  @IsOptional()
+  @IsInt()
+  cooldownEndTime: number;
+
+  @IsOptional()
+  @IsInt()
+  endTime?: number;
+
+  @IsString()
+  serverId!: string;
 }
 
 export class StartedGooseGameMatchPubSubEventDto {

@@ -9,6 +9,7 @@ export const authMiddleware =
       try {
         const token =
           socket.handshake.auth?.token || socket.handshake.query?.token;
+
         await validateRequestAndSetUserIfIsValid(
           socket,
           token,

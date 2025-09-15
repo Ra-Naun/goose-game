@@ -2,8 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { STALE_TIME } from "@/src/config/tanQuery";
 import { useEffect } from "react";
 import { userService } from "@/src/services/userService";
-import { useOnlineUsersStore } from "@/src/store/onlineUsersStore";
-import { useWebSocketStore } from "@/src/store/webSocketStore";
+import { useOnlineUsersStore } from "@/src/store/user/onlineUsersStore";
+import { useWebSocketStore } from "@/src/store/ws/webSocketStore";
 import { wsClientUser } from "@/src/API/client/wsClientUser";
 
 export const useOnlineUsers = () => {

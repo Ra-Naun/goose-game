@@ -4,17 +4,17 @@ export enum MatchStatus {
   FINISHED = 'FINISHED',
 }
 
-export type MatchPlayers = { [playerId: string]: MatchPlayerInfo };
-export type PlayerScores = { [playerId: string]: number };
+export type GooseMatchPlayers = { [playerId: string]: GooseMatchPlayerInfo };
+export type GoosePlayerScores = { [playerId: string]: number };
 
-export type SerializedMatchPlayers = { [playerId: string]: string };
-export type SerializedPlayerScore = { [playerId: string]: string };
+export type SerializedGooseMatchPlayers = { [playerId: string]: string };
+export type SerializedGoosePlayerScore = { [playerId: string]: string };
 
-export interface GameMatch {
+export interface GooseMatch {
   id: string;
   title: string;
-  players: MatchPlayers;
-  scores: PlayerScores;
+  players: GooseMatchPlayers;
+  scores: GoosePlayerScores;
   status: MatchStatus;
   maxPlayers: number;
   cooldownMs: number;
@@ -27,24 +27,24 @@ export interface GameMatch {
 export type ActiveMatchIsEnded = {
   status: MatchStatus.FINISHED;
 };
-export interface GameMatchCacheItem
-  extends Omit<GameMatch, 'scores' | 'players' | 'status'> {
+export interface GooseMatchCacheItem
+  extends Omit<GooseMatch, 'scores' | 'players' | 'status'> {
   serverId: string;
 }
 
-export type MatchPlayerInfo = {
+export type GooseMatchPlayerInfo = {
   id: string;
   username: string;
   email: string;
   avatarUrl: string;
 };
 
-export interface HistoryOfGameMatch {
+export interface HistoryOfGooseGameMatch {
   id: string;
   title: string;
   status: MatchStatus;
-  players: MatchPlayers;
-  scores: PlayerScores;
+  players: GooseMatchPlayers;
+  scores: GoosePlayerScores;
   maxPlayers: number;
   cooldownMs: number;
   matchDurationSeconds: number;

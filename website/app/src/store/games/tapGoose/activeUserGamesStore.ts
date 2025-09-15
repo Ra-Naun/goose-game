@@ -5,7 +5,7 @@ import {
   type GameMatch,
   type MatchPlayerInfo,
 } from "@/src/API/types/match.types";
-import type { UpdateGameMatchDataFromServer } from "./types";
+import type { UpdateGameMatchDataFromServer } from "../../types";
 
 type State = {
   match: GameMatch | ActiveMatchIsEnded | null;

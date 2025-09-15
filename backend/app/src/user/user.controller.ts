@@ -9,15 +9,20 @@ import {
 } from '@nestjs/common';
 
 import { UsersService } from './user.service';
-import { OnlineUsers, SerializedUserForUI, UserDto } from './dto/user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
 
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/guards/jwt.guard';
-import { UserRoleEnum } from './dto/types';
 import { TOKEN_KEY } from 'src/auth/config';
 import { checkIsUserHasRequiredRole } from 'src/auth/guards/roles.guard';
 import type { JwtRequest } from 'src/types/request-user';
+
+import {
+  OnlineUsers,
+  SerializedUserForUI,
+  UserDto,
+  UpdateUserDto,
+} from './dto';
+import { UserRoleEnum } from './dto/types';
 
 @ApiTags('User')
 @Controller('user')

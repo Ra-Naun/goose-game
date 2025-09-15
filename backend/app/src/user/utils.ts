@@ -1,4 +1,4 @@
-import { CreateUserDto } from './dto/create-user.dto';
+import { CreateUserDto } from './dto';
 import { UserRoleEnum } from './dto/types';
 
 export const getUserRoleOnCreate = (

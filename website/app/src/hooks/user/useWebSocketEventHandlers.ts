@@ -1,6 +1,6 @@
 import { useEffect } from "react";
-import { useWebSocketStore } from "@/src/store/webSocketStore";
-import { useConnectWebSocket } from "../useConnectWebSocket";
+import { useWebSocketStore } from "@/src/store/ws/webSocketStore";
+import { useConnectWebSocket } from "../ws/useConnectWebSocket";
 import { wsClientUser } from "@/src/API/client/wsClientUser";
 import { useWSSubscribesData } from "./useWSSubscribesData";
 

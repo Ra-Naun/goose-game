@@ -10,6 +10,9 @@ import { AsyncApiModule } from 'nestjs-asyncapi';
 import { TapGooseGameModule } from 'src/tap-goose-game/tap-goose-game.module';
 import { RedisModule } from '@nestjs-modules/ioredis';
 import { redisConfig } from 'src/config/redis.config';
+import { ChatModule } from 'src/chat/chat.module';
+import { JwtModule } from '@nestjs/jwt';
+import { dynamicJwtConfig } from 'src/auth/config';
 
 @Module({
   imports: [
@@ -25,10 +28,16 @@ import { redisConfig } from 'src/config/redis.config';
         password: redisConfig().userPassword,
       },
     }),
+    JwtModule.register({
+      global: true,
+      secret: dynamicJwtConfig().secret,
+      signOptions: { expiresIn: dynamicJwtConfig().expiresIn },
+    }),
     AsyncApiModule,
     PrismaModule,
     AuthModule,
     UserModule,
+    ChatModule,
     TapGooseGameModule,
   ],
   controllers: [AppController],

@@ -1,24 +1,12 @@
-import { IsArray, IsBoolean, IsString, Validate } from 'class-validator';
-import { UserRoleEnum } from './types';
-import { IsUserRoleArrayConstraint } from './validators/roles-array.validator';
+import { IsBoolean } from 'class-validator';
+import { UserInfo, UserInfoDto } from './user.info.dto';
 
-export class OnlineUserInfoDto {
-  @IsString()
-  id: string;
+export interface OnlineUserInfo extends UserInfo {
+  isOnline: boolean;
+}
 
-  @IsString()
-  email: string;
-
-  @IsString()
-  username: string;
-
-  @IsString()
-  avatarUrl: string;
-
-  @IsArray()
-  @Validate(IsUserRoleArrayConstraint)
-  roles: UserRoleEnum[];
-
+export type OnlineUsers = OnlineUserInfoDto[];
+export class OnlineUserInfoDto extends UserInfoDto implements OnlineUserInfo {
   @IsBoolean()
   isOnline!: boolean;
 }

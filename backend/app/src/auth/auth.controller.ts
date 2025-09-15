@@ -5,8 +5,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiBody, ApiTags } from '@nestjs/swagger';
 
 import type { JwtRequest } from 'src/types/request-user';
-import { CreateUserDto } from 'src/user/dto/create-user.dto';
-import { LoginUserDto } from 'src/user/dto/login-user.dto';
+import { LoginUserDto, CreateUserDto } from 'src/user/dto';
 import { LocalAuthGuard } from './guards/local.guard';
 import { LoginReturn, LogoutReturn, RegisterReturn } from './types';
 import { TOKEN_KEY } from './config';

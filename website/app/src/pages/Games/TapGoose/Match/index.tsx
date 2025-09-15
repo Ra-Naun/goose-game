@@ -3,7 +3,7 @@ import { Container } from "pixi.js";
 import { useExtend } from "@pixi/react";
 import { Navigate, useParams } from "@tanstack/react-router";
 
-import { useUserStore } from "@/src/store/userStore";
+import { useUserStore } from "@/src/store/user/userStore";
 import { WidgetPanel } from "@/src/components/WidgetPanel";
 import { useViewerSizes } from "@/src/hooks/games/tapGoose/useViewerSizes";
 import { PixiViewer } from "@/src/components/pages/Games/TapGoose/Match/PixiViewer";
@@ -16,7 +16,7 @@ import { matchService } from "@/src/services/matchService";
 import { UserNotificationService } from "@/src/services/userNotificationService";
 import { useTimeToEndLeft } from "@/src/hooks/games/tapGoose/useTimeToEndLeft";
 import { tapGooseMatchHistoryPath } from "@/src/router/paths";
-import { useActiveUserGameStore } from "@/src/store/activeUserGamesStore";
+import { useActiveUserGameStore } from "@/src/store/games/tapGoose/activeUserGamesStore";
 import { useOnlineUsers } from "@/src/hooks/user/useOnlineUsers";
 
 interface MatchParams {

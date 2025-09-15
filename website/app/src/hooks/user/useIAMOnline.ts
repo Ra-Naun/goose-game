@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { userService } from "@/src/services/userService";
 import { UserNotificationService } from "@/src/services/userNotificationService";
 import { I_AM_ONLINE_INTERVAL } from "@/src/config/ws.config";
-import { useWebSocketStore } from "@/src/store/webSocketStore";
+import { useWebSocketStore } from "@/src/store/ws/webSocketStore";
 import { wsClientUser } from "@/src/API/client/wsClientUser";
 
 export function useIAMOnline() {

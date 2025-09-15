@@ -2,19 +2,23 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { REDIS_EVENTS, REDIS_KEYS } from './config';
 import { PubSubService } from '../pub-sub/pub-sub.service';
 import { ExternalCacheService } from 'src/external-cache/external-cache.service';
-import { CreateGooseMatchRequestDto, UserGooseTapPubSubEventDto } from './dto';
+import {
+  CreateGooseMatchRequestDto,
+  GooseGameMatchDto,
+  UserGooseTapPubSubEventDto,
+} from './dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { $Enums } from '@prisma/client';
 import {
-  GameMatch,
-  HistoryOfGameMatch,
+  HistoryOfGooseGameMatch,
   MatchStatus,
   ActiveMatchIsEnded,
-  MatchPlayers,
-  PlayerScores,
+  GooseMatchPlayers,
+  GoosePlayerScores,
 } from './types';
 import { MatchSchedulerService } from './match-scheduler.service';
-import { UserDto } from 'src/user/dto/user.dto';
+
+import { UserDto } from 'src/user/dto';
 import { HelperService } from './helper.service';
 import { UserRoleEnum } from 'src/user/dto/types';
 import { validateDto } from 'src/utils/validateDto';
@@ -125,14 +129,14 @@ export class TapGooseGameService {
     );
   }
 
-  async getAvailableMatches(userId: string): Promise<GameMatch[]> {
+  async getAvailableMatches(userId: string): Promise<GooseGameMatchDto[]> {
     return this.helper.getAvailableMatches(userId);
   }
 
   async getPlayerActiveMatch(
     userId: string,
     matchId: string,
-  ): Promise<GameMatch | ActiveMatchIsEnded> {
+  ): Promise<GooseGameMatchDto | ActiveMatchIsEnded> {
     try {
       return await this.helper.getPlayerActiveMatchFromCache(userId, matchId);
     } catch (error) {
@@ -154,7 +158,9 @@ export class TapGooseGameService {
     }
   }
 
-  async getUserMatchesHistory(userId: string): Promise<HistoryOfGameMatch[]> {
+  async getUserMatchesHistory(
+    userId: string,
+  ): Promise<HistoryOfGooseGameMatch[]> {
     const matchScores = await this.prisma.userMatchScore.findMany({
       where: { playerId: userId },
       include: {
@@ -178,14 +184,14 @@ export class TapGooseGameService {
       orderBy: { match: { startTime: 'desc' } },
     });
 
-    const matches: HistoryOfGameMatch[] = matchScores
+    const matches: HistoryOfGooseGameMatch[] = matchScores
       .filter((score) => {
         return score.match.status === $Enums.MatchStatus.FINISHED;
       })
       .map((score) => {
         const match = score.match;
-        const players: MatchPlayers = {};
-        const scores: PlayerScores = {};
+        const players: GooseMatchPlayers = {};
+        const scores: GoosePlayerScores = {};
         for (const s of match.scores) {
           if (s.user) {
             scores[s.playerId] = s.score;
@@ -210,7 +216,7 @@ export class TapGooseGameService {
           createdTime: match.createdTime.getTime(),
           startTime: match.startTime.getTime(),
           endTime: match.endTime.getTime(),
-        } as HistoryOfGameMatch;
+        } as HistoryOfGooseGameMatch;
       });
 
     return matches;
@@ -218,7 +224,7 @@ export class TapGooseGameService {
 
   async getUserMatchHistory(
     matchId: string,
-  ): Promise<HistoryOfGameMatch | null> {
+  ): Promise<HistoryOfGooseGameMatch | null> {
     const match = await this.prisma.match.findUnique({
       where: { id: matchId },
       include: {
@@ -241,8 +247,8 @@ export class TapGooseGameService {
       throw new NotFoundException('Match not found or not finished');
     }
 
-    const players: MatchPlayers = {};
-    const scores: PlayerScores = {};
+    const players: GooseMatchPlayers = {};
+    const scores: GoosePlayerScores = {};
 
     for (const s of match.scores) {
       if (s.user) {

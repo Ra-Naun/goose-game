@@ -1,37 +1,35 @@
 import { IsArray, IsDate, IsString } from 'class-validator';
 import { User } from '@prisma/client';
 
-import { OnlineUserInfoDto } from './online-user.info.dto';
 import { UserRoleEnum } from './types';
 import { validateDto } from 'src/utils/validateDto';
 
 export type SerializedUserForUI = Omit<UserDto, 'hashedPassword'>;
 
-export type OnlineUsers = OnlineUserInfoDto[];
 export class UserDto {
   @IsString()
-  id: string;
+  id!: string;
 
   @IsString()
-  email: string;
+  email!: string;
 
   @IsString()
-  username: string;
+  username!: string;
 
   @IsString()
-  avatarUrl: string;
+  avatarUrl!: string;
 
   @IsString()
-  hashedPassword: string;
+  hashedPassword!: string;
 
   @IsDate()
-  createdAt: Date;
+  createdAt!: Date;
 
   @IsDate()
-  updatedAt: Date;
+  updatedAt!: Date;
 
   @IsArray()
-  roles: UserRoleEnum[];
+  roles!: UserRoleEnum[];
 
   static async fromDatabaseItem(item: User) {
     const userDto = await validateDto(UserDto, {
