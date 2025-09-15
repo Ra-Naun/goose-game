@@ -13,7 +13,7 @@ import { MessageItem } from "./MessageItem";
 export const Chat: React.FC = () => {
   useWebSocketEventHandlers();
   const user = useUserStore((state) => state.user);
-  const [selectedChannelId, setSelectedChannelId] = useState(COMMON_CHAT_ID);
+  const [selectedChannelId] = useState(COMMON_CHAT_ID);
   const { data: messages = [], isLoading, isError } = useChatMessages(selectedChannelId);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
