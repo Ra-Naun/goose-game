@@ -106,7 +106,6 @@ docker compose -f ./pgadmin/docker-compose.dev.yaml up -d
 
 wait_for_healthy postgres_container
 wait_for_healthy redis_container
-wait_for_healthy pgadmin_container
 
 # Выполнить prisma команды внутри контейнера
 docker compose -f ./backend/docker-compose.prisma.dev.yaml build
