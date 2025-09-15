@@ -1,5 +1,5 @@
 import { ConflictException, Injectable } from '@nestjs/common';
-import { hashPassword } from 'libs/crypto';
+import { hashPassword } from 'src/utils/crypto';
 import { getUserRoleOnCreate as getUserRolesOnCreate } from './utils';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { REDIS_KEYS } from 'src/tap-goose-game/config';

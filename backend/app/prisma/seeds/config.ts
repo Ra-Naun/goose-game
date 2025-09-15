@@ -1,5 +1,5 @@
 import * as dotenv from 'dotenv';
-import { hashPassword } from '../../libs/crypto';
+import { hashPassword } from '../../src/utils/crypto';
 import {
   getInitAdminEmail,
   getInitAdminPassword,

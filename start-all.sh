@@ -92,7 +92,11 @@ open_url() {
 
 docker network create backend-network
 
-# Поднимаем необходимые сервисы (Redis, Postgres)
+# Поднимаем необходимые сервисы (Vault, Redis, Postgres, PGAdmin)
+docker compose -f ./vault/docker-compose.dev.yaml build
+docker compose -f ./vault/docker-compose.dev.yaml up -d
+wait_for_healthy vault_container
+
 docker compose -f ./redis/docker-compose.dev.yaml build
 docker compose -f ./redis/docker-compose.dev.yaml up -d
 docker compose -f ./postgresql/docker-compose.dev.yaml build
@@ -100,13 +104,9 @@ docker compose -f ./postgresql/docker-compose.dev.yaml up -d
 docker compose -f ./pgadmin/docker-compose.dev.yaml build
 docker compose -f ./pgadmin/docker-compose.dev.yaml up -d
 
-# Ожидаем готовности Postgres и Redis
-while ! docker exec postgres_container pg_isready -U postgres_user -d postgres_db; do
-  sleep 2
-done
-while ! docker exec redis_container redis-cli --raw incr ping; do
-  sleep 2
-done
+wait_for_healthy postgres_container
+wait_for_healthy redis_container
+wait_for_healthy pgadmin_container
 
 # Выполнить prisma команды внутри контейнера
 docker compose -f ./backend/docker-compose.prisma.dev.yaml build
