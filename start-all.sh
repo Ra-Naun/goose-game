@@ -104,9 +104,14 @@ docker compose -f ./postgresql/docker-compose.dev.yaml up -d
 docker compose -f ./pgadmin/docker-compose.dev.yaml build
 docker compose -f ./pgadmin/docker-compose.dev.yaml up -d
 
+
+echo "Streaming logs for container vault_agent_for_pg_container ..."
+# Follow logs in background
+docker logs -f vault_agent_for_pg_container &
+wait_for_healthy vault_agent_for_pg_container
+
 wait_for_healthy postgres_container
 wait_for_healthy redis_container
-wait_for_healthy pgadmin_container
 
 # Выполнить prisma команды внутри контейнера
 docker compose -f ./backend/docker-compose.prisma.dev.yaml build
