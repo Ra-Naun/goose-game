@@ -12,9 +12,11 @@ import { useActiveUserGameStore } from "@/src/store/games/tapGoose/activeUserGam
 import { useUserStore } from "@/src/store/user/userStore";
 import { parseServerMatchDataToClientMatchData } from "@/src/services/utils";
 import { useAvailableGamesStore } from "@/src/store/games/tapGoose/availableGamesStore";
+import { useQueryClient } from "@tanstack/react-query";
 
 export function useWSSubscribesData(): WSSubscribesData {
   const user = useUserStore((state) => state.user);
+  const queryClient = useQueryClient();
 
   const addAvailableMatch = useAvailableGamesStore((state) => state.addMatch);
   const removeAvailableMatch = useAvailableGamesStore((state) => state.removeMatch);
@@ -54,6 +56,7 @@ export function useWSSubscribesData(): WSSubscribesData {
         },
 
         [WEBSOCKET_CHANEL_LISTEN.MATCH_ENDED]: (matchUpdate: EndedGameMatchDataFromServer) => {
+          queryClient.invalidateQueries({ queryKey: ["matchesHistory", user?.id] });
           const availableMatch = getAvailableMatchById(matchUpdate.id);
           if (availableMatch) {
             removeAvailableMatch(matchUpdate.id);
