@@ -1,9 +1,16 @@
 # первый параметр задает режим запуска - дев или тест (и в будущем prod)
 # пример вызова - ./start-all.sh dev или ./start-all.sh test
+
 mode="$1"
-if [ "$mode" != "dev" ] && [ "$mode" != "test" ]; then
-  echo "Ошибка: параметр должен быть 'dev' или 'test'"
+front_mode="$1"
+
+if [ "$mode" != "dev" ] && [ "$mode" != "test" ] && [ "$mode" != "remote-test" ]; then
+  echo "Ошибка: параметр должен быть 'dev', 'test' или 'remote-test'"
   exit 1
+fi
+
+if [ "$mode" = "remote-test" ]; then
+  mode="test"
 fi
 
 wait_for_healthy() {
@@ -88,7 +95,7 @@ open_url() {
   fi
 }
 
-./stop-all.sh "${mode}"
+./stop-all.sh "${front_mode}"
 
 docker network create backend-network
 
@@ -132,14 +139,14 @@ wait_for_healthy backend-"${mode}"-instance-2
 wait_for_healthy backend-"${mode}"-instance-3
 
 # и билдим фронт
-docker compose -f ./website/docker-compose."${mode}".yaml build
-docker compose -f ./website/docker-compose."${mode}".yaml up -d
+docker compose -f ./website/docker-compose."${front_mode}".yaml build
+docker compose -f ./website/docker-compose."${front_mode}".yaml up -d
 
 
-if [ "$mode" = "test" ]; then
+if [ "$front_mode" = "test" ] || [ "$front_mode" = "remote-test" ]; then
   echo "Ожидание сборки фронтенда..."
-  wait_for_container_exit goose-web-"${mode}"
-  docker compose -f ./website/docker-compose."${mode}".yaml down
+  wait_for_container_exit goose-web-"${front_mode}"
+  docker compose -f ./website/docker-compose."${front_mode}".yaml down
   echo "Сборка фронтенда прошла успешно."
 fi
 

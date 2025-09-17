@@ -1,14 +1,20 @@
 # первый параметр задает режим запуска - дев или тест (и в будущем prod)
 # пример вызова - ./start-dev-all.sh dev или ./stop-all.sh test
 mode="$1"
-if [ "$mode" != "dev" ] && [ "$mode" != "test" ]; then
-  echo "Ошибка: параметр должен быть 'dev' или 'test'"
+front_mode="$1"
+
+if [ "$mode" != "dev" ] && [ "$mode" != "test" ] && [ "$mode" != "remote-test" ]; then
+  echo "Ошибка: параметр должен быть 'dev', 'test' или 'remote-test'"
   exit 1
+fi
+
+if [ "$mode" = "remote-test" ]; then
+  mode="test"
 fi
 
 docker compose -f ./nginx/docker-compose."${mode}".yaml down
 
-docker compose -f ./website/docker-compose."${mode}".yaml down
+docker compose -f ./website/docker-compose."${front_mode}".yaml down
 
 docker compose -f ./backend/docker-compose."${mode}".yaml down
 
