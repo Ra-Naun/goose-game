@@ -55,11 +55,13 @@ open_url() {
   if [ "$mode" = "dev" ]; then
     ui_url="https://localhost/"
     pgadmin_url="https://localhost/pgadmin/"
+    vault_url="https://localhost/vault/"
     swager_url="https://localhost/api/docs/api/"
     async_api_url="https://localhost/api/docs/async-api/"
   elif [ "$mode" = "test" ]; then
     ui_url="http://localhost:4014/"
     pgadmin_url="http://localhost:4014/pgadmin/"
+    vault_url="http://localhost:4014/vault/"
     swager_url="http://localhost:4014/api/docs/api/"
     async_api_url="http://localhost:4014/api/docs/async-api/"
   else
