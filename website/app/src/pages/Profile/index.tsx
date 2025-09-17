@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useUserStore } from "@/src/store/user/userStore";
 import { getUserInitials } from "@/src/utils";
-import { WidgetPanel } from "@/src/components/WidgetPanel";
+import { WidgetPanel } from "@/src/components/Goose-UI/WidgetPanel";
 import Modal from "@/src/components/Goose-UI/Modal";
 import { Button } from "@/src/components/Goose-UI/Forms/Button";
 import { SelectFile } from "@/src/components/Goose-UI/Forms/Input";

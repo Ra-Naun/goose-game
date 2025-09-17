@@ -20,6 +20,8 @@ docker compose -f ./postgresql/docker-compose.dev.yaml down
 
 docker compose -f ./pgadmin/docker-compose.dev.yaml down
 
+docker compose -f ./vault-agent/docker-compose.dev.yaml down
+
 docker compose -f ./vault/docker-compose.dev.yaml down
 
 docker network rm backend-network

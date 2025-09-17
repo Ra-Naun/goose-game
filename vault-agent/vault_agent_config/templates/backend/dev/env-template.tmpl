@@ -1,0 +1,14 @@
+POSTGRES_HOST={{ with secret "secret/tap-goose/backend/dev" }}{{ .Data.data.POSTGRES_HOST }}{{ end }}
+POSTGRES_USER={{ with secret "secret/tap-goose/backend/dev" }}{{ .Data.data.POSTGRES_USER }}{{ end }}
+POSTGRES_PASSWORD={{ with secret "secret/tap-goose/backend/dev" }}{{ .Data.data.POSTGRES_PASSWORD }}{{ end }}
+POSTGRES_DB={{ with secret "secret/tap-goose/backend/dev" }}{{ .Data.data.POSTGRES_DB }}{{ end }}
+POSTGRES_PORT={{ with secret "secret/tap-goose/backend/dev" }}{{ .Data.data.POSTGRES_PORT }}{{ end }}
+POSTGRES_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?schema=public"
+
+REDIS_PASSWORD={{ with secret "secret/tap-goose/backend/dev" }}{{ .Data.data.REDIS_PASSWORD }}{{ end }}
+REDIS_USER={{ with secret "secret/tap-goose/backend/dev" }}{{ .Data.data.REDIS_USER }}{{ end }}
+REDIS_USER_PASSWORD={{ with secret "secret/tap-goose/backend/dev" }}{{ .Data.data.REDIS_USER_PASSWORD }}{{ end }}
+
+JWT_SECRET={{ with secret "secret/tap-goose/backend/dev" }}{{ .Data.data.JWT_SECRET }}{{ end }}
+
+INIT_ADMIN_PASSWORD={{ with secret "secret/tap-goose/backend/dev" }}{{ .Data.data.INIT_ADMIN_PASSWORD }}{{ end }}

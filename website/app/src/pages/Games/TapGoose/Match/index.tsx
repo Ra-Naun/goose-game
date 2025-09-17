@@ -4,7 +4,7 @@ import { useExtend } from "@pixi/react";
 import { Navigate, useParams } from "@tanstack/react-router";
 
 import { useUserStore } from "@/src/store/user/userStore";
-import { WidgetPanel } from "@/src/components/WidgetPanel";
+import { WidgetPanel } from "@/src/components/Goose-UI/WidgetPanel";
 import { useViewerSizes } from "@/src/hooks/games/tapGoose/useViewerSizes";
 import { PixiViewer } from "@/src/components/pages/Games/TapGoose/Match/PixiViewer";
 import { Scores } from "@/src/components/pages/Games/TapGoose/Match/Scores";

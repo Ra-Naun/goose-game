@@ -3,9 +3,9 @@ import { useWebSocketEventHandlers } from "@/src/hooks/games/tapGoose/useWebSock
 import { useMatchHistory } from "@/src/hooks/games/tapGoose/useMatchHistory";
 import { Loading } from "@/src/components/Goose-UI/Loading";
 import { ErrorMessage } from "@/src/components/Goose-UI/ErrorMessage";
-import { WidgetPanel } from "@/src/components/WidgetPanel";
+import { WidgetPanel } from "@/src/components/Goose-UI/WidgetPanel";
 import { useSortedScores } from "@/src/hooks/games/tapGoose/useSortedScores";
-import { Cup } from "@/src/components/Cup";
+import { Cup } from "@/src/components/Goose-UI/Cup";
 import { useUserStore } from "@/src/store/user/userStore";
 
 interface MatchHistoryParams {

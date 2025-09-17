@@ -92,13 +92,20 @@ open_url() {
 
 docker network create backend-network
 
-# Поднимаем необходимые сервисы (Vault, Redis, Postgres, PGAdmin)
+# Поднимаем необходимые сервисы (Vault, VaultAgent, Redis, Postgres, PGAdmin)
 docker compose -f ./vault/docker-compose.dev.yaml build
 docker compose -f ./vault/docker-compose.dev.yaml up -d
 wait_for_healthy vault_container
 
-docker compose -f ./redis/docker-compose.dev.yaml build
-docker compose -f ./redis/docker-compose.dev.yaml up -d
+# генерируем секреты:
+docker compose -f ./vault-agent/docker-compose.dev.yaml build
+docker compose -f ./vault-agent/docker-compose.dev.yaml up -d
+wait_for_healthy vault_agent_container
+docker compose -f ./vault-agent/docker-compose.dev.yaml down
+
+# и теперь уже можно запустить и те сервисы, для которых нужны секреты:
+docker compose --env-file ./vault-agent/vault_secrets/redis/.env -f ./redis/docker-compose.dev.yaml build
+docker compose --env-file ./vault-agent/vault_secrets/redis/.env -f ./redis/docker-compose.dev.yaml up -d
 docker compose -f ./postgresql/docker-compose.dev.yaml build
 docker compose -f ./postgresql/docker-compose.dev.yaml up -d
 docker compose -f ./pgadmin/docker-compose.dev.yaml build
@@ -107,7 +114,7 @@ docker compose -f ./pgadmin/docker-compose.dev.yaml up -d
 wait_for_healthy postgres_container
 wait_for_healthy redis_container
 
-# Выполнить prisma команды внутри контейнера
+# Выполнить prisma команды внутри контейнера - накатить тестовые данные в бд
 docker compose -f ./backend/docker-compose.prisma.dev.yaml build
 docker compose -f ./backend/docker-compose.prisma.dev.yaml up -d
 
@@ -119,7 +126,7 @@ echo "Prisma команды выполнены успешно."
 docker compose -f ./backend/docker-compose."${mode}".yaml build
 docker compose -f ./backend/docker-compose."${mode}".yaml up -d
 
-# Ждём готовности backend (curl health check)
+# Ждём готовности backend
 wait_for_healthy backend-"${mode}"-instance-1
 wait_for_healthy backend-"${mode}"-instance-2
 wait_for_healthy backend-"${mode}"-instance-3
@@ -132,6 +139,7 @@ docker compose -f ./website/docker-compose."${mode}".yaml up -d
 if [ "$mode" = "test" ]; then
   echo "Ожидание сборки фронтенда..."
   wait_for_container_exit goose-web-"${mode}"
+  docker compose -f ./website/docker-compose."${mode}".yaml down
   echo "Сборка фронтенда прошла успешно."
 fi
 

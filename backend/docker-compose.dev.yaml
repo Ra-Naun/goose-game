@@ -7,6 +7,7 @@ services:
     environment:
       - SERVER_ID=s1
     env_file:
+      - ../vault-agent/vault_secrets/backend/dev/.env
       - ./docker/dev/.env
     volumes:
       - ./app:/usr/src/app
@@ -22,6 +23,7 @@ services:
     environment:
       - SERVER_ID=s2
     env_file:
+      - ../vault-agent/vault_secrets/backend/dev/.env
       - ./docker/dev/.env
     volumes:
       - ./app:/usr/src/app
@@ -37,6 +39,7 @@ services:
     environment:
       - SERVER_ID=s3
     env_file:
+      - ../vault-agent/vault_secrets/backend/dev/.env
       - ./docker/dev/.env
     volumes:
       - ./app:/usr/src/app

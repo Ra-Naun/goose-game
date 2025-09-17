@@ -2,7 +2,7 @@ import { useMatchesHistory } from "@/src/hooks/games/tapGoose/useMatchHistory";
 import { useUserStore } from "@/src/store/user/userStore";
 import { AvailableMatches } from "@/src/components/pages/Games/TapGoose/Lobby/AvailableMatches";
 import { MatchesHistory } from "@/src/components/pages/Games/TapGoose/Lobby/MatchesHistory";
-import { WidgetPanel } from "@/src/components/WidgetPanel";
+import { WidgetPanel } from "@/src/components/Goose-UI/WidgetPanel";
 import { OnlineUsers } from "@/src/components/pages/Games/TapGoose/Lobby/OnlineUsers";
 import { useWebSocketEventHandlers } from "@/src/hooks/games/tapGoose/useWebSocketEventHandlers";
 import { Chat } from "@/src/components/pages/Games/TapGoose/Lobby/Chat";

@@ -1,6 +1,6 @@
 services:
   frontend:
-    container_name: goose-web-test
+    container_name: goose-web-remote-test
     build:
       context: .
       dockerfile: ./docker/test/Dockerfile
@@ -9,4 +9,4 @@ services:
     volumes:
      - ./app/dist:/app/dist
      - ./docker/files/.env:/app/env/local.env
-     - ../vault-agent/vault_secrets/website/local-test/.env:/app/env/secret.env
+     - ../vault-agent/vault_secrets/website/ra-naun-test/.env:/app/env/secret.env

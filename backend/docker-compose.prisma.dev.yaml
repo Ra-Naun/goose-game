@@ -6,6 +6,7 @@ services:
       dockerfile: ./docker/dev/prisma/Dockerfile
     env_file:
       - ./docker/dev/.env
+      - ../vault-agent/vault_secrets/backend/dev/.env
     volumes:
       - ./app:/usr/src/app
     restart: 'no'

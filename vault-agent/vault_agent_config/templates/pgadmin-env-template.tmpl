@@ -1,0 +1,2 @@
+PGADMIN_DEFAULT_EMAIL={{ with secret "secret/tap-goose/pgadmin/dev" }}{{ .Data.data.PGADMIN_DEFAULT_EMAIL }}{{ end }}
+PGADMIN_DEFAULT_PASSWORD={{ with secret "secret/tap-goose/pgadmin/dev" }}{{ .Data.data.PGADMIN_DEFAULT_PASSWORD }}{{ end }}

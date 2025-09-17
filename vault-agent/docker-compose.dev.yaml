@@ -1,0 +1,31 @@
+services:
+  vault-agent:
+    image: hashicorp/vault:1.20.3
+    container_name: vault_agent_container
+    environment:
+      VAULT_ADDR: http://vault:8200
+      VAULT_TOKEN: root
+    volumes:
+      - ./vault_agent_config:/etc/vault-agent-config
+      - ./vault_secrets:/etc/secrets
+    command: vault agent -config=/etc/vault-agent-config/config.hcl
+    cap_add:
+      - IPC_LOCK
+    networks:
+      - backend-network
+    healthcheck:
+      test: [
+        "CMD", "sh", "-c", 
+        "\
+        test -f /etc/secrets/postgresql/.env && \
+        test -f /etc/secrets/redis/.env \
+        "
+        ]
+      interval: 5s
+      start_period: 5s
+      retries: 10
+      timeout: 3s
+
+networks:
+  backend-network:
+    external: true

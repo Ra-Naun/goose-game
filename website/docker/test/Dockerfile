@@ -9,6 +9,7 @@ COPY ./app/package.json ./app/yarn.lock ./
 RUN yarn install --frozen-lockfile
 
 COPY ./app/ ./
-COPY ./docker/test/files/.env ./
 
-CMD ["sh", "-c", "yarn build"]
+RUN rm -f ./.env
+
+CMD ["sh", "-c", "cat ./env/secret.env ./env/local.env > ./.env && yarn build"]

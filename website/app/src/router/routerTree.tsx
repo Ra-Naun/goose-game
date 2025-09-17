@@ -20,6 +20,7 @@ import {
   tapGooseMatchHistoryPath,
   tapGooseMatchPath,
 } from "./paths";
+import { RootErrorComponent } from "@/src/components/RootErrorComponent";
 
 export const rootRoute = createRootRoute({
   component: () => (
@@ -29,6 +30,7 @@ export const rootRoute = createRootRoute({
     </>
   ),
   notFoundComponent: NotFound,
+  errorComponent: RootErrorComponent,
 });
 
 export const rootRedirectRoute = createRoute({
