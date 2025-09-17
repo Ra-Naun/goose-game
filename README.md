@@ -177,11 +177,6 @@ sudo mv mkcert-v*-linux-amd64 /usr/local/bin/mkcert
 mkcert --versionmkcert --version
 ```
 
-- Создайте сертификат для localhost (выполните в каталоге вашего проекта или отдельной папке):
-```
-mkcert localhost
-```
-
 - перейдите в дирректорию с сертификатами:
 ```
 cd ./nginx/files/certs/
