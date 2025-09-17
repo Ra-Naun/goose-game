@@ -36,7 +36,7 @@ vault kv put secret/tap-goose/website/local-test \
   WEBSOCKET_URL=ws://localhost:4014/api
 
 vault kv put secret/tap-goose/website/ra-naun-test \
-  WEBSOCKET_URL=ws://ra-naun.site/api
+  WEBSOCKET_URL=wss://ra-naun.site/api
 
 vault kv put secret/tap-goose/backend/dev \
   POSTGRES_HOST=postgres \
