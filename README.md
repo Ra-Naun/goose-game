@@ -2,7 +2,7 @@
 ## https://ra-naun.site/
 - Развернул на сервере тестовую сборку
 
-## Это тестовое задание, задача - https://github.com/Ra-Naun/goose-game/wiki
+## Концепт - https://github.com/Ra-Naun/goose-game/wiki
 
 ## Как запустить:
 - в главной папке выполнить из терминала команду `./start-all.sh dev` или `./start-all.sh test`
