@@ -30,12 +30,12 @@ import {
   EndedGooseGameMatchPubSubEventDto,
 } from './dto';
 import { PubSubService } from '../pub-sub/pub-sub.service';
-import { UseGuards } from '@nestjs/common';
+// import { UseGuards } from '@nestjs/common';
 import { UsersService } from 'src/user/user.service';
 import { JwtService } from '@nestjs/jwt';
-import { Roles } from 'src/auth/decorators/roles.decorator';
-import { UserRoleEnum } from 'src/user/dto/types';
-import { RolesGuard } from 'src/auth/guards/roles.guard';
+// import { Roles } from 'src/auth/decorators/roles.decorator';
+// import { UserRoleEnum } from 'src/user/dto/types';
+// import { RolesGuard } from 'src/auth/guards/roles.guard';
 import type { JwtSocket } from 'src/types/socket-user';
 import { UsersSockets } from 'src/utils/UsersSockets';
 
@@ -230,8 +230,8 @@ export class TapGooseGameGateway
     message: { payload: GooseGameMatchDto },
     summary: 'Response when a match is created',
   })
-  @Roles(UserRoleEnum.ADMIN)
-  @UseGuards(RolesGuard)
+  // @Roles(UserRoleEnum.ADMIN)
+  // @UseGuards(RolesGuard)
   @SubscribeMessage(WEBSOCKET_CHANEL_LISTEN.CREATE_MATCH)
   async handleCreateMatch(
     @MessageBody() dto: CreateGooseMatchRequestDto,

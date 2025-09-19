@@ -82,7 +82,7 @@ export const AvailableMatches: React.FC = () => {
   const { data: availableMatches, isLoading: loadingAvailable, isError: errorAvailable } = useAvailableMatches();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const isAdmin = !!user?.roles.includes(UserRoleEnum.ADMIN);
+  // const isAdmin = !!user?.roles.includes(UserRoleEnum.ADMIN);
 
   const handleJoinToMatch = async (matchId: string) => {
     const payload: JoinToMatchPayload = {
@@ -113,14 +113,14 @@ export const AvailableMatches: React.FC = () => {
     <>
       <div className="flex justify-between items-start mb-4">
         <h2 className="text-xl font-bold text-white ">Доступные матчи</h2>
-        {isAdmin && (
-          <Button
-            onClick={() => setIsModalOpen(true)}
-            className="text-sm px-4 py-2 bg-blue-600 text-white rounded shadow hover:bg-blue-700 transition"
-          >
-            Создать матч
-          </Button>
-        )}
+        {/* {isAdmin && ( */}
+        <Button
+          onClick={() => setIsModalOpen(true)}
+          className="text-sm px-4 py-2 bg-blue-600 text-white rounded shadow hover:bg-blue-700 transition"
+        >
+          Создать матч
+        </Button>
+        {/* )} */}
       </div>
       {loadingAvailable && <p className="text-gray-400">Загрузка матчей...</p>}
       {errorAvailable && <p className="text-red-400">Ошибка загрузки матчей</p>}
