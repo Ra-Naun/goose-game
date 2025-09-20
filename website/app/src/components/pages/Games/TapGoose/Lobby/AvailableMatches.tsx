@@ -5,7 +5,6 @@ import { useUserStore } from "@/src/store/user/userStore";
 import { Navigate, useNavigate } from "@tanstack/react-router";
 import { Button, ButtonWithOpacity } from "@/src/components/Goose-UI/Forms/Button";
 import { UserNotificationService } from "@/src/services/userNotificationService";
-import { UserRoleEnum } from "@/src/store/types";
 import { loginPath, tapGooseMatchPath } from "@/src/router/paths";
 import { useMemo, useState } from "react";
 import { useTimeToStartLeft } from "@/src/hooks/games/tapGoose/useTimeToStartLeft";
@@ -82,7 +81,6 @@ export const AvailableMatches: React.FC = () => {
   const { data: availableMatches, isLoading: loadingAvailable, isError: errorAvailable } = useAvailableMatches();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  // const isAdmin = !!user?.roles.includes(UserRoleEnum.ADMIN);
 
   const handleJoinToMatch = async (matchId: string) => {
     const payload: JoinToMatchPayload = {
