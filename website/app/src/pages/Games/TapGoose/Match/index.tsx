@@ -61,9 +61,6 @@ export function Match() {
       return;
     }
 
-    console.log("Goose tapped!");
-    if (notEndedActiveMatch?.status !== MatchStatus.ONGOING) return;
-
     setLocalScoreDelta((prev) => prev + 1);
     try {
       await matchService.tapGooseWS({ matchId });
