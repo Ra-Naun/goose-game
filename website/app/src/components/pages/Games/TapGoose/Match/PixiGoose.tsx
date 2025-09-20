@@ -1,14 +1,13 @@
 import { Loading } from "@/src/components/Goose-UI/Loading";
 import { useGoosePosition } from "@/src/hooks/games/tapGoose/useGoosePosition";
 import { useExtend } from "@pixi/react";
-import { Assets, Sprite } from "pixi.js";
-import { useMemo } from "react";
+import { Sprite, Texture, TextureSource } from "pixi.js";
 
-import goosePng from "./images/goose.png";
+type PixiGooseProps = { onTap: () => void; width: number; height: number; texture: Texture<TextureSource<any>> };
 
-export function PixiGoose({ onTap, width, height }: { onTap: () => void; width: number; height: number }) {
+export const PixiGoose = (props: PixiGooseProps) => {
+  const { onTap, width, height, texture } = props;
   useExtend({ Sprite });
-  const texture = useMemo(() => Assets.get(goosePng), []);
   const [position, spriteRef] = useGoosePosition(width, height);
 
   if (!texture) return <Loading />;
@@ -26,4 +25,4 @@ export function PixiGoose({ onTap, width, height }: { onTap: () => void; width: 
       cursor="pointer"
     />
   );
-}
+};

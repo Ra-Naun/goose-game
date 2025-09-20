@@ -119,7 +119,7 @@ export function Match() {
 
   return (
     <div className="flex gap-4 p-4 w-full h-full flex-col md:flex-row">
-      <WidgetPanel className="w-full text-gray-100">
+      <WidgetPanel className="w-full text-gray-100 p-0!">
         <div ref={containerRef} className="flex-1 rounded-lg overflow-hidden w-full h-full">
           <PixiViewer
             width={width}

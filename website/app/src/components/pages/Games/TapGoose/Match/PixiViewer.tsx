@@ -3,13 +3,16 @@ import { Application, useExtend } from "@pixi/react";
 import { PixiGoose } from "./PixiGoose";
 import { Container } from "pixi.js";
 import { useLoadTextures } from "@/src/hooks/PIXI/useLoadTextures";
-import goosePng from "./images/goose.png";
 import { Loading } from "@/src/components/Goose-UI/Loading";
 import { ErrorMessage } from "@/src/components/Goose-UI/ErrorMessage";
 import { Button } from "@/src/components/Goose-UI/Forms/Button";
 import { Link } from "@/src/components/Goose-UI/Link";
 import { tapGooseLobbyPath } from "@/src/router/paths";
 import { formatTime } from "@/src/utils";
+
+import goosePng from "./images/goose.png";
+import fon1Jpg from "./images/fon1.jpg";
+import { PixiBackground } from "./PixiBackground";
 
 interface PixiViewerProps extends Partial<React.ComponentProps<typeof Application>> {
   handleGooseTap: () => void;
@@ -38,7 +41,7 @@ export const PixiViewer: React.FC<PixiViewerProps> = (props) => {
     ...rest
   } = props;
 
-  const [isLoadingTextures] = useLoadTextures(goosePng);
+  const [isLoadingTextures, loadedTextures] = useLoadTextures(goosePng, fon1Jpg);
 
   if (isLoadingTextures) {
     return <Loading />;
@@ -82,7 +85,8 @@ export const PixiViewer: React.FC<PixiViewerProps> = (props) => {
         backgroundColor={"#101828"}
         {...rest}
       >
-        <PixiGoose width={width} height={height} onTap={handleGooseTap} />
+        <PixiBackground width={width} height={height} texture={loadedTextures[fon1Jpg]} />
+        <PixiGoose width={width} height={height} onTap={handleGooseTap} texture={loadedTextures[goosePng]} />
       </Application>
       {started && timeToEndLeft !== null && (
         <div
