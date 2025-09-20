@@ -4,16 +4,18 @@ import { Loading } from "@/src/components/Goose-UI/Loading";
 import { OnlineStatus } from "@/src/components/Goose-UI/Avatar/OnlineStatus";
 import { useOnlineUsers } from "@/src/hooks/user/useOnlineUsers";
 import { useMemo, useState } from "react";
+import { useUserStore } from "@/src/store/user/userStore";
 
 type OnlineUserItemProps = {
   username: string;
   email: string;
   avatarUrl: string;
   isOnline: boolean;
+  isMe: boolean;
 };
 
 const OnlineUserItem: React.FC<OnlineUserItemProps> = (props) => {
-  const { username, email, avatarUrl, isOnline } = props;
+  const { username, email, avatarUrl, isOnline, isMe } = props;
   return (
     <li
       className="flex items-center py-2 px-3 rounded hover:bg-blue-900 cursor-pointer text-white space-x-3 transition-colors ease-in-out duration-300"
@@ -22,7 +24,7 @@ const OnlineUserItem: React.FC<OnlineUserItemProps> = (props) => {
     >
       <AvatarImage avatarUrl={avatarUrl} username={username} />
       <div className="flex flex-col">
-        <span className="font-semibold">{username}</span>
+        <span className={`font-semibold ${!!isMe && "underline underline-offset-2"}`}>{username}</span>
         <span className="text-xs text-gray-400">{email}</span>
       </div>
 
@@ -34,6 +36,8 @@ const OnlineUserItem: React.FC<OnlineUserItemProps> = (props) => {
 export const OnlineUsers: React.FC = () => {
   const { data: onlineUsers, isLoading, isError } = useOnlineUsers();
   const [search, setSearch] = useState("");
+
+  const currentUser = useUserStore((store) => store.user);
 
   const filteredUsers = useMemo(() => {
     return onlineUsers.filter((user) => user.username.toLowerCase().includes(search.toLowerCase()));
@@ -70,6 +74,7 @@ export const OnlineUsers: React.FC = () => {
                 email={user.email}
                 avatarUrl={user.avatarUrl}
                 isOnline={true}
+                isMe={user.id === currentUser?.id}
               />
             ))
           )}
